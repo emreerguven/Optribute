@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductCategory {
+  WATER
+  SOFT_DRINK
+  BUNDLE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  DELIVERING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  CARD_ON_DELIVERY
+  ACCOUNT_BALANCE
+}
+
+model Company {
+  id                   String    @id
+  slug                 String    @unique
+  name                 String
+  city                 String?
+  supportPhone         String?
+  currency             String    @default("TRY")
+  orderLeadTimeMinutes Int       @default(45)
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  products             Product[]
+  customers            Customer[]
+  orders               Order[]
+}
+
+model Product {
+  id         String          @id
+  companyId  String
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String
+  imageUrl   String?
+  unitLabel  String
+  category   ProductCategory
+  priceCents Int
+  isActive   Boolean         @default(true)
+  sortOrder  Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  orderItems OrderItem[]
+
+  @@index([companyId, isActive, sortOrder])
+}
+
+model Customer {
+  id              String            @id
+  companyId       String
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fullName        String
+  phone           String
+  normalizedPhone String
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  addresses       CustomerAddress[]
+  orders          Order[]
+
+  @@unique([companyId, normalizedPhone])
+  @@index([companyId, fullName])
+}
+
+model CustomerAddress {
+  id         String   @id
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label      String?
+  line1      String
+  district   String?
+  city       String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId, isDefault])
+}
+
+model Order {
+  id               String      @id
+  companyId        String
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerId       String?
+  customer         Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName     String
+  phone            String
+  normalizedPhone  String
+  addressLine      String
+  deliveryNotes    String?
+  status           OrderStatus @default(PENDING)
+  source           String      @default("qr")
+  submittedAt      DateTime    @default(now())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  orderItems       OrderItem[]
+  payments         Payment[]
+
+  @@index([companyId, submittedAt])
+  @@index([companyId, status, submittedAt])
+}
+
+model OrderItem {
+  id             String   @id
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName    String
+  unitPriceCents Int
+  quantity       Int
+  createdAt      DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model Payment {
+  id          String        @id
+  orderId     String
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amountCents Int
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  reference   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([orderId, status])
+}
