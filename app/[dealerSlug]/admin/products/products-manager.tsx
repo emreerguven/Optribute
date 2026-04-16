@@ -176,7 +176,9 @@ export function ProductsManager({ dealerSlug, initialProducts }: Props) {
         throw new Error(payload.error ?? "Ürün oluşturulamadı");
       }
 
-      setProducts((current) => [...current, payload.product]);
+      const product = payload.product;
+
+      setProducts((current) => [...current, product]);
       setNewProductForm(createEmptyForm());
       setCreateMessage("Yeni ürün kaydedildi.");
     } catch (error) {
@@ -221,8 +223,10 @@ export function ProductsManager({ dealerSlug, initialProducts }: Props) {
         throw new Error(payload.error ?? "Ürün güncellenemedi");
       }
 
+      const updatedProduct = payload.product;
+
       setProducts((current) =>
-        current.map((product) => (product.id === payload.product?.id ? payload.product : product))
+        current.map((product) => (product.id === updatedProduct.id ? updatedProduct : product))
       );
       setEditingProductId(null);
       setUpdateMessage("Ürün güncellendi.");

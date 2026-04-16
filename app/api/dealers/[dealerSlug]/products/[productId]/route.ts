@@ -77,12 +77,10 @@ export async function PATCH(
   {
     params
   }: {
-    params:
-      | Promise<{ dealerSlug: string; productId: string }>
-      | { dealerSlug: string; productId: string };
+    params: Promise<{ dealerSlug: string; productId: string }>;
   }
 ) {
-  const { dealerSlug, productId } = await Promise.resolve(params);
+  const { dealerSlug, productId } = await params;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {

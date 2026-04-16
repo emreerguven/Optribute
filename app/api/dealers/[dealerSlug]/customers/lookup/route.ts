@@ -5,9 +5,9 @@ import { normalizePhone } from "@/src/server/domain/phone";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ dealerSlug: string }> | { dealerSlug: string } }
+  { params }: { params: Promise<{ dealerSlug: string }> }
 ) {
-  const { dealerSlug } = await Promise.resolve(params);
+  const { dealerSlug } = await params;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {

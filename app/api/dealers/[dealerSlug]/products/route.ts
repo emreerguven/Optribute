@@ -77,9 +77,9 @@ function parseProductInput(body: unknown) {
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ dealerSlug: string }> | { dealerSlug: string } }
+  { params }: { params: Promise<{ dealerSlug: string }> }
 ) {
-  const { dealerSlug } = await Promise.resolve(params);
+  const { dealerSlug } = await params;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {
@@ -92,9 +92,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ dealerSlug: string }> | { dealerSlug: string } }
+  { params }: { params: Promise<{ dealerSlug: string }> }
 ) {
-  const { dealerSlug } = await Promise.resolve(params);
+  const { dealerSlug } = await params;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {

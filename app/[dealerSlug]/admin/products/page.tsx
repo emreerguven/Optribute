@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function DealerProductsAdminPage({
   params
 }: {
-  params: Promise<{ dealerSlug: string }> | { dealerSlug: string };
+  params: Promise<{ dealerSlug: string }>;
 }) {
-  const { dealerSlug } = await Promise.resolve(params);
+  const { dealerSlug } = await params;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {

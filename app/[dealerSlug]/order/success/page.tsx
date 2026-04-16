@@ -29,13 +29,11 @@ export default async function OrderSuccessPage({
   params,
   searchParams
 }: {
-  params: Promise<{ dealerSlug: string }> | { dealerSlug: string };
-  searchParams:
-    | Promise<Record<string, string | string[] | undefined>>
-    | Record<string, string | string[] | undefined>;
+  params: Promise<{ dealerSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { dealerSlug } = await Promise.resolve(params);
-  const query = await Promise.resolve(searchParams);
+  const { dealerSlug } = await params;
+  const query = await searchParams;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {
