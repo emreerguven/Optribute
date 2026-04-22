@@ -44,7 +44,7 @@ function evaluateCampaign(
         !campaign.targetProductId ||
         !campaign.giftProductId ||
         !campaign.giftProductName ||
-        !campaign.giftProductPriceCents ||
+        campaign.giftProductPriceCents === null ||
         requiredQuantity <= 0 ||
         targetQuantity < requiredQuantity
       ) {
@@ -52,6 +52,7 @@ function evaluateCampaign(
       }
 
       const giftQuantity = Math.floor(targetQuantity / requiredQuantity);
+      const giftTotalCents = campaign.giftProductPriceCents * giftQuantity;
 
       if (giftQuantity <= 0) {
         return null;
@@ -61,17 +62,24 @@ function evaluateCampaign(
         campaignId: campaign.id,
         name: campaign.name,
         type: campaign.type,
-        discountAmountCents: 0,
+        discountAmountCents: giftTotalCents,
         giftItems: [
           {
             productId: campaign.giftProductId,
-            name: `${campaign.giftProductName} (Hediye)`,
+            name: campaign.giftProductName,
             quantity: giftQuantity,
-            unitPriceCents: 0
+            unitPriceCents: campaign.giftProductPriceCents
           }
         ],
-        adjustmentItems: [],
-        benefitCents: campaign.giftProductPriceCents * giftQuantity
+        adjustmentItems: [
+          {
+            productId: "",
+            name: "Kampanya indirimi",
+            quantity: 1,
+            unitPriceCents: -giftTotalCents
+          }
+        ],
+        benefitCents: giftTotalCents
       };
     }
 
@@ -179,11 +187,16 @@ export function evaluateBestCampaign(
   );
 
   const appliedCampaign = best?.application ?? null;
-  const discountAmountCents = appliedCampaign?.discountAmountCents ?? 0;
+  const campaignItemTotalCents = appliedCampaign
+    ? [...appliedCampaign.giftItems, ...appliedCampaign.adjustmentItems].reduce(
+        (sum, item) => sum + item.quantity * item.unitPriceCents,
+        0
+      )
+    : 0;
 
   return {
     subtotalCents,
-    finalTotalCents: Math.max(0, subtotalCents - discountAmountCents),
+    finalTotalCents: Math.max(0, subtotalCents + campaignItemTotalCents),
     appliedCampaign
   };
 }

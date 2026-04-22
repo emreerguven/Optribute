@@ -103,17 +103,16 @@ export async function POST(
       order.payments[0]?.amountCents ??
       order.items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
     const discountLine = order.items.find((item) => item.unitPriceCents < 0);
-    const giftItems = order.items.filter((item) => item.unitPriceCents === 0 && item.name.includes("(Hediye)"));
 
     return NextResponse.json({
       ok: true,
       orderId: order.id,
       totalCents,
-      campaign: discountLine || giftItems.length > 0
+      campaign: discountLine
         ? {
             name: discountLine?.name.replace("Kampanya indirimi: ", "") ?? "Hediye ürün kampanyası",
             discountAmountCents: discountLine ? Math.abs(discountLine.unitPriceCents) : 0,
-            giftItems
+            giftItems: []
           }
         : null
     });

@@ -371,20 +371,20 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                   <div className="separator" />
                   <div className="campaign-summary stack compact-stack">
                     <strong>Kampanya uygulandı: {appliedCampaign.name}</strong>
+                    {appliedCampaign.giftItems.map((item) => (
+                      <div key={`${item.productId}_${item.name}`} className="summary-row">
+                        <span>
+                          {item.quantity} x {item.name}
+                        </span>
+                        <strong>{formatCurrency(item.quantity * item.unitPriceCents)}</strong>
+                      </div>
+                    ))}
                     {appliedCampaign.discountAmountCents > 0 ? (
                       <div className="summary-row">
-                        <span>İndirim</span>
+                        <span>Kampanya indirimi</span>
                         <strong>-{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
                       </div>
                     ) : null}
-                    {appliedCampaign.giftItems.map((item) => (
-                      <div key={`${item.productId}_${item.name}`} className="summary-row">
-                        <span>Hediye ürün</span>
-                        <strong>
-                          {item.quantity} x {item.name.replace(" (Hediye)", "")}
-                        </strong>
-                      </div>
-                    ))}
                   </div>
                 </>
               ) : null}

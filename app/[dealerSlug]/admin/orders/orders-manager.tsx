@@ -186,9 +186,7 @@ export function OrdersManager({ dealerSlug, initialOrders }: Props) {
                   <div className="detail-label">Ürün özeti</div>
                   {order.items.map((item, index) => (
                     <div key={`${order.id}_${item.productId}_${index}`} className="summary-row">
-                      <span>
-                        {item.quantity} x {item.name}
-                      </span>
+                      <span>{item.unitPriceCents < 0 ? item.name : `${item.quantity} x ${item.name}`}</span>
                       <strong>{formatCurrency(item.quantity * item.unitPriceCents)}</strong>
                     </div>
                   ))}
