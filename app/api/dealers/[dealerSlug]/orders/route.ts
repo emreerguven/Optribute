@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
-import { createOrder } from "@/src/server/domain/orders/service";
+import {
+  createOrder,
+  getOrderPaymentSnapshot,
+  setPaymentReferenceForOrder
+} from "@/src/server/domain/orders/service";
+import { initializeIyzicoCheckoutForm } from "@/src/server/payments/iyzico";
 import { PAYMENT_METHODS, type OrderDraft } from "@/src/server/domain/types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -99,10 +104,34 @@ export async function POST(
   try {
     const draft = parseOrderDraft(body);
     const order = await createOrder(dealer.id, draft);
+    const primaryPayment = order.payments[0];
     const totalCents =
-      order.payments[0]?.amountCents ??
+      primaryPayment?.amountCents ??
       order.items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
     const discountLine = order.items.find((item) => item.unitPriceCents < 0);
+
+    if (draft.paymentMethod === "online") {
+      if (!primaryPayment) {
+        throw new Error("Online ödeme için ödeme kaydı oluşturulamadı");
+      }
+
+      const snapshot = await getOrderPaymentSnapshot(order.id);
+
+      if (!snapshot) {
+        throw new Error("Online ödeme için sipariş bilgisi bulunamadı");
+      }
+
+      const checkout = await initializeIyzicoCheckoutForm(snapshot);
+      await setPaymentReferenceForOrder(order.id, primaryPayment.id, checkout.token);
+
+      return NextResponse.json({
+        ok: true,
+        orderId: order.id,
+        totalCents,
+        paymentPageUrl: checkout.paymentPageUrl,
+        paymentToken: checkout.token
+      });
+    }
 
     return NextResponse.json({
       ok: true,

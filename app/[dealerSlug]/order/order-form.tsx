@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
@@ -39,7 +39,7 @@ const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string; description:
   {
     value: "online",
     label: "Online",
-    description: "Demo için online ödeme olarak gösterilir"
+    description: "Online ödeme ile güvenli şekilde tamamlayın"
   }
 ];
 
@@ -87,6 +87,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
   const [lookupState, setLookupState] = useState<LookupState>("idle");
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -117,6 +118,12 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
   );
   const totalCents = campaignResult.finalTotalCents;
   const appliedCampaign = campaignResult.appliedCampaign;
+
+  useEffect(() => {
+    if (redirectUrl) {
+      window.location.assign(redirectUrl);
+    }
+  }, [redirectUrl]);
 
   function handlePhoneChange(value: string) {
     setPhone(value);
@@ -230,11 +237,18 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
       const payload = (await response.json()) as {
         orderId?: string;
         totalCents?: number;
+        paymentPageUrl?: string;
         error?: string;
       };
 
       if (!response.ok || !payload.orderId) {
         throw new Error(payload.error ?? "Sipariş oluşturulamadı");
+      }
+
+      if (paymentMethod === "online" && payload.paymentPageUrl) {
+        setSubmitMessage("Ödeme sayfasına yönlendiriliyorsunuz...");
+        setRedirectUrl(payload.paymentPageUrl);
+        return;
       }
 
       const params = new URLSearchParams({
@@ -542,7 +556,11 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
               </div>
             </div>
 
-            {submitMessage ? <div className="note warning">{submitMessage}</div> : null}
+            {submitMessage ? (
+              <div className={`note ${submitMessage.includes("yönlendiriliyorsunuz") ? "" : "warning"}`}>
+                {submitMessage}
+              </div>
+            ) : null}
 
             <button
               type="submit"

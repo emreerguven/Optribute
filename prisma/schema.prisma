@@ -183,4 +183,5 @@ model Payment {
   updatedAt   DateTime      @updatedAt
 
   @@index([orderId, status])
+  @@index([reference])
 }

@@ -25,6 +25,35 @@ function paymentLabel(paymentMethod: string) {
   }
 }
 
+function paymentStatusCopy(paymentStatus: string) {
+  switch (paymentStatus) {
+    case "paid":
+      return {
+        badge: "Ödeme alındı",
+        title: "Ödeme alındı",
+        message: "Siparişiniz alınmıştır."
+      };
+    case "failed":
+      return {
+        badge: "Ödeme başarısız",
+        title: "Ödeme başarısız",
+        message: "Siparişiniz oluşturuldu, ödeme alınamadı."
+      };
+    case "pending":
+      return {
+        badge: "Ödeme kontrol ediliyor",
+        title: "Ödeme kontrol ediliyor",
+        message: "Siparişiniz alındı, ödeme sonucu bekleniyor."
+      };
+    default:
+      return {
+        badge: "Sipariş alındı",
+        title: "Her şey hazır",
+        message: "Bayinin ek bilgiye ihtiyacı olursa, siparişte kullandığınız telefon numarasından sizinle iletişime geçecektir."
+      };
+  }
+}
+
 export default async function OrderSuccessPage({
   params,
   searchParams
@@ -44,34 +73,36 @@ export default async function OrderSuccessPage({
   const customerName = readValue(query.customerName, "Müşteri");
   const total = Number(readValue(query.total, "0"));
   const paymentMethod = readValue(query.paymentMethod, "cash-on-delivery");
+  const paymentStatus = readValue(query.paymentStatus);
   const itemCount = Number(readValue(query.itemCount, "0"));
+  const statusCopy = paymentStatusCopy(paymentStatus);
 
   return (
     <main className="shell success-shell stack">
       <section className="hero hero-compact stack">
-        <div className="success-badge">Sipariş alındı</div>
+        <div className="success-badge">{statusCopy.badge}</div>
         <div className="stack compact-copy">
           <div>
-            <h1>Teşekkürler, {customerName}.</h1>
+            <h1>{paymentStatus ? statusCopy.title : `Teşekkürler, ${customerName}.`}</h1>
             <p className="lead">
-              {dealer.name} siparişinizi aldı. Bayi ekibi siparişi şimdi ekranında görüp
-              teslimata hazırlayabilir.
+              {paymentStatus
+                ? statusCopy.message
+                : `${dealer.name} siparişinizi aldı. Bayi ekibi siparişi şimdi ekranında görüp teslimata hazırlayabilir.`}
             </p>
           </div>
           <div className="tag-row">
-            <span className="status">Referans: {orderId || "Bekleniyor"}</span>
-            <span className="pill">Tahmini teslimat: {dealer.orderLeadTimeMinutes} dk</span>
+            {orderId ? <span className="status">Sipariş no: {orderId}</span> : null}
+            <span className="delivery-pill">Tahmini teslimat: {dealer.orderLeadTimeMinutes} dk</span>
           </div>
         </div>
       </section>
 
       <section className="panel stack">
         <div>
-          <span className="kicker">Sipariş özeti</span>
-          <h2>Her şey hazır</h2>
+          <h2>Sipariş özeti</h2>
         </div>
 
-        <div className="summary-card stack">
+        <div className="summary-card success-summary-card stack">
           <div className="summary-row">
             <span className="caption">Bayi</span>
             <strong>{dealer.name}</strong>
@@ -88,11 +119,6 @@ export default async function OrderSuccessPage({
             <span>Toplam</span>
             <strong>{formatCurrency(Number.isFinite(total) ? total : 0)}</strong>
           </div>
-        </div>
-
-        <div className="note">
-          Bayinin ek bilgiye ihtiyacı olursa, siparişte kullandığınız telefon numarasından
-          sizinle iletişime geçecektir.
         </div>
 
         <div className="actions">

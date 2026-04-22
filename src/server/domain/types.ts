@@ -113,6 +113,10 @@ export type Order = {
   payments: Payment[];
 };
 
+export type OrderPaymentSnapshot = Order & {
+  company: Company;
+};
+
 export type OrderDraft = {
   phone: string;
   fullName: string;

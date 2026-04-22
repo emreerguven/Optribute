@@ -36,11 +36,24 @@ function paymentStatusLabel(status: string) {
     case "paid":
       return "Ödendi";
     case "failed":
-      return "Başarısız";
+      return "Ödeme alınamadı";
     case "cancelled":
       return "İptal";
     default:
       return status;
+  }
+}
+
+function paymentStatusClass(status: string) {
+  switch (status) {
+    case "paid":
+      return "payment-status-paid";
+    case "failed":
+      return "payment-status-failed";
+    case "cancelled":
+      return "payment-status-failed";
+    default:
+      return "payment-status-pending";
   }
 }
 
@@ -172,7 +185,7 @@ export function OrdersManager({ dealerSlug, initialOrders }: Props) {
                     <strong>
                       {primaryPayment ? paymentMethodLabel(primaryPayment.method) : "Belirtilmedi"}
                     </strong>
-                    <span className="caption">
+                    <span className={`payment-status ${primaryPayment ? paymentStatusClass(primaryPayment.status) : "payment-status-pending"}`}>
                       {primaryPayment ? paymentStatusLabel(primaryPayment.status) : "Bekliyor"}
                     </span>
                   </div>

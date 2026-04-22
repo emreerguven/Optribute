@@ -9,7 +9,15 @@ import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { normalizePhone } from "@/src/server/domain/phone";
 import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { upsertCustomerForOrder } from "@/src/server/domain/customers/service";
-import type { Order, OrderDraft, OrderStatus, PaymentMethod, PaymentStatus } from "@/src/server/domain/types";
+import type {
+  Company,
+  Order,
+  OrderDraft,
+  OrderPaymentSnapshot,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus
+} from "@/src/server/domain/types";
 
 function getAllowedNextStatuses(currentStatus: OrderStatus): OrderStatus[] {
   switch (currentStatus) {
@@ -158,6 +166,43 @@ function toOrder(order: {
       status: toPaymentStatus(payment.status),
       reference: payment.reference
     }))
+  };
+}
+
+function toCompany(company: {
+  id: string;
+  slug: string;
+  name: string;
+  city: string | null;
+  supportPhone: string | null;
+  currency: string;
+  orderLeadTimeMinutes: number;
+}): Company {
+  return {
+    id: company.id,
+    slug: company.slug,
+    name: company.name,
+    city: company.city,
+    supportPhone: company.supportPhone,
+    currency: company.currency,
+    orderLeadTimeMinutes: company.orderLeadTimeMinutes
+  };
+}
+
+function toOrderPaymentSnapshot(order: Parameters<typeof toOrder>[0] & {
+  company: {
+    id: string;
+    slug: string;
+    name: string;
+    city: string | null;
+    supportPhone: string | null;
+    currency: string;
+    orderLeadTimeMinutes: number;
+  };
+}): OrderPaymentSnapshot {
+  return {
+    ...toOrder(order),
+    company: toCompany(order.company)
   };
 }
 
@@ -360,6 +405,130 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
 
     return toOrder(order);
   });
+}
+
+export async function getOrderPaymentSnapshot(orderId: string) {
+  const order = await db.order.findUnique({
+    where: {
+      id: orderId
+    },
+    include: {
+      company: true,
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    }
+  });
+
+  return order ? toOrderPaymentSnapshot(order) : null;
+}
+
+export async function setPaymentReferenceForOrder(
+  orderId: string,
+  paymentId: string,
+  reference: string
+) {
+  const payment = await db.payment.findFirst({
+    where: {
+      id: paymentId,
+      orderId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!payment) {
+    throw new Error("Ödeme kaydı bulunamadı");
+  }
+
+  await db.payment.update({
+    where: {
+      id: payment.id
+    },
+    data: {
+      reference
+    }
+  });
+}
+
+export async function updateOnlinePaymentResultByToken(
+  token: string,
+  status: Extract<PaymentStatus, "paid" | "failed" | "pending">
+) {
+  const payment = await db.payment.findFirst({
+    where: {
+      reference: token,
+      method: PrismaPaymentMethod.ACCOUNT_BALANCE
+    },
+    include: {
+      order: {
+        include: {
+          company: true,
+          orderItems: {
+            orderBy: {
+              createdAt: "asc"
+            }
+          },
+          payments: {
+            orderBy: {
+              createdAt: "asc"
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!payment) {
+    throw new Error("Online ödeme kaydı bulunamadı");
+  }
+
+  await db.payment.update({
+    where: {
+      id: payment.id
+    },
+    data: {
+      status:
+        status === "paid"
+          ? PrismaPaymentStatus.PAID
+          : status === "failed"
+            ? PrismaPaymentStatus.FAILED
+            : PrismaPaymentStatus.PENDING
+    }
+  });
+
+  const updatedOrder = await db.order.findUnique({
+    where: {
+      id: payment.orderId
+    },
+    include: {
+      company: true,
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    }
+  });
+
+  if (!updatedOrder) {
+    throw new Error("Sipariş bulunamadı");
+  }
+
+  return toOrderPaymentSnapshot(updatedOrder);
 }
 
 export async function countCustomersForCompany(companyId: string) {

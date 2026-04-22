@@ -357,6 +357,17 @@ textarea {
   color: var(--text);
 }
 
+.delivery-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.58rem 0.95rem;
+  color: var(--brand-strong);
+  background: rgba(15, 118, 110, 0.12);
+  font-weight: 800;
+}
+
 .separator {
   height: 1px;
   background: rgba(17, 35, 31, 0.08);
@@ -591,6 +602,10 @@ textarea {
   padding: 1rem;
 }
 
+.success-summary-card {
+  gap: 1.15rem;
+}
+
 .campaign-summary {
   padding: 0.8rem;
   border-radius: 16px;
@@ -649,6 +664,30 @@ textarea {
 .status-muted {
   background: rgba(17, 35, 31, 0.08);
   color: var(--muted);
+}
+
+.payment-status {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.34rem 0.72rem;
+}
+
+.payment-status-paid {
+  color: #0f5132;
+  background: rgba(15, 118, 110, 0.13);
+}
+
+.payment-status-pending {
+  color: var(--muted);
+  background: rgba(17, 35, 31, 0.08);
+}
+
+.payment-status-failed {
+  color: var(--danger);
+  background: rgba(194, 65, 12, 0.08);
 }
 
 .product-form-grid {
