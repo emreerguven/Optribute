@@ -303,3 +303,56 @@ export async function updateCampaignStatusForCompany(
 
   return toCampaign(campaign);
 }
+
+export async function updateCampaignForCompany(
+  companyId: string,
+  campaignId: string,
+  input: {
+    name: string;
+    type: CampaignType;
+    isActive: boolean;
+    targetProductId?: string | null;
+    giftProductId?: string | null;
+    requiredQuantity?: number | null;
+    payableQuantity?: number | null;
+    minCartTotalCents?: number | null;
+    discountAmountCents?: number | null;
+  }
+) {
+  const existing = await db.campaign.findFirst({
+    where: {
+      id: campaignId,
+      companyId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!existing) {
+    throw new Error("Kampanya bulunamadı");
+  }
+
+  const data = normalizeCampaignInput(input);
+  await ensureProductsBelongToCompany(companyId, [data.targetProductId, data.giftProductId]);
+
+  const campaign = await db.campaign.update({
+    where: {
+      id: existing.id
+    },
+    data: {
+      name: data.name,
+      type: toPrismaCampaignType(data.type),
+      isActive: data.isActive,
+      targetProductId: data.targetProductId,
+      giftProductId: data.giftProductId,
+      requiredQuantity: data.requiredQuantity,
+      payableQuantity: data.payableQuantity,
+      minCartTotalCents: data.minCartTotalCents,
+      discountAmountCents: data.discountAmountCents
+    },
+    include: campaignInclude
+  });
+
+  return toCampaign(campaign);
+}
