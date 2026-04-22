@@ -57,7 +57,7 @@ function categoryLabel(category: Product["category"]) {
 function campaignTypeLabel(campaign: Campaign) {
   switch (campaign.type) {
     case "bundle-gift":
-      return "Hediye ürün";
+      return "Kampanya ürünü";
     case "quantity":
       return "Adet avantajı";
     case "cart-discount":
@@ -68,7 +68,7 @@ function campaignTypeLabel(campaign: Campaign) {
 function campaignDescription(campaign: Campaign) {
   switch (campaign.type) {
     case "bundle-gift":
-      return `${campaign.requiredQuantity ?? 0} ${campaign.targetProductName ?? "ürün"} alana ${campaign.giftProductName ?? "hediye ürün"} hediye`;
+      return `${campaign.requiredQuantity ?? 0} adet ${campaign.targetProductName ?? "ürün"} ile ${campaign.giftProductName ?? "kampanya ürünü"} dahil`;
     case "quantity":
       return `${campaign.requiredQuantity ?? 0} al ${campaign.payableQuantity ?? 0} öde: ${campaign.targetProductName ?? "seçili ürün"}`;
     case "cart-discount":
@@ -268,8 +268,8 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
         {campaigns.length > 0 ? (
           <div className="campaigns-section stack">
             <div>
-              <h3>Kampanyalar</h3>
-              <p className="caption">Uygun kampanya siparişinize otomatik uygulanır.</p>
+              <h3>Mevcut kampanyalar</h3>
+              <p className="caption">Uygun olan kampanya siparişinize otomatik dahil edilir.</p>
             </div>
             <div className="campaign-card-list">
               {campaigns.map((campaign) => {
@@ -370,7 +370,10 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                 <>
                   <div className="separator" />
                   <div className="campaign-summary stack compact-stack">
-                    <strong>Kampanya uygulandı: {appliedCampaign.name}</strong>
+                    <div>
+                      <strong>{appliedCampaign.name}</strong>
+                      <p className="caption">Siparişinize dahil edildi</p>
+                    </div>
                     {appliedCampaign.giftItems.map((item) => (
                       <div key={`${item.productId}_${item.name}`} className="summary-row">
                         <span>
@@ -380,10 +383,16 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                       </div>
                     ))}
                     {appliedCampaign.discountAmountCents > 0 ? (
-                      <div className="summary-row">
-                        <span>Kampanya indirimi</span>
-                        <strong>-{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
-                      </div>
+                      <>
+                        <div className="summary-row">
+                          <span>Kampanya avantajı</span>
+                          <strong>-{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
+                        </div>
+                        <div className="summary-row">
+                          <span>Toplam avantaj</span>
+                          <strong>{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
+                        </div>
+                      </>
                     ) : null}
                   </div>
                 </>
