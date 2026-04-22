@@ -5,7 +5,9 @@ import {
   PaymentStatus as PrismaPaymentStatus
 } from "@/src/generated/prisma/index";
 import { db } from "@/src/server/db";
+import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { normalizePhone } from "@/src/server/domain/phone";
+import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { upsertCustomerForOrder } from "@/src/server/domain/customers/service";
 import type { Order, OrderDraft, OrderStatus, PaymentMethod, PaymentStatus } from "@/src/server/domain/types";
 
@@ -288,13 +290,26 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
     }
 
     const productMap = new Map(products.map((product) => [product.id, product]));
-    const totalAmountCents = items.reduce((sum, item) => {
+    const pricedItems = items.map((item) => {
       const product = productMap.get(item.productId);
       if (!product) {
         throw new Error(`Product ${item.productId} was not found for company ${companyId}`);
       }
-      return sum + product.priceCents * item.quantity;
-    }, 0);
+
+      return {
+        productId: product.id,
+        name: product.name,
+        quantity: item.quantity,
+        unitPriceCents: product.priceCents
+      };
+    });
+    const campaigns = await listActiveCampaignsForCompany(companyId, tx);
+    const campaignResult = evaluateBestCampaign(campaigns, pricedItems);
+    const orderItems = [
+      ...pricedItems,
+      ...(campaignResult.appliedCampaign?.giftItems ?? []),
+      ...(campaignResult.appliedCampaign?.adjustmentItems ?? [])
+    ];
 
     const order = await tx.order.create({
       data: {
@@ -309,27 +324,19 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         status: PrismaOrderStatus.PENDING,
         source: "qr",
         orderItems: {
-          create: items.map((item, index) => {
-            const product = productMap.get(item.productId);
-
-            if (!product) {
-              throw new Error(`Product ${item.productId} was not found for company ${companyId}`);
-            }
-
-            return {
-              id: `order_item_${randomUUID()}`,
-              productId: product.id,
-              productName: product.name,
-              quantity: item.quantity,
-              unitPriceCents: product.priceCents
-            };
-          })
+          create: orderItems.map((item) => ({
+            id: `order_item_${randomUUID()}`,
+            productId: item.productId || null,
+            productName: item.name,
+            quantity: item.quantity,
+            unitPriceCents: item.unitPriceCents
+          }))
         },
         payments: {
           create: [
             {
               id: `pay_${randomUUID()}`,
-              amountCents: totalAmountCents,
+              amountCents: campaignResult.finalTotalCents,
               method: toPrismaPaymentMethod(draft.paymentMethod),
               status: PrismaPaymentStatus.PENDING,
               reference: null

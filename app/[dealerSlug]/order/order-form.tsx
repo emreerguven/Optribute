@@ -2,13 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
-import type { PaymentMethod, Product } from "@/src/server/domain/types";
+import type { Campaign, PaymentMethod, Product } from "@/src/server/domain/types";
 
 type Props = {
   dealerSlug: string;
   dealerName: string;
   products: Product[];
+  campaigns: Campaign[];
 };
 
 type LookupPayload = {
@@ -52,7 +54,29 @@ function categoryLabel(category: Product["category"]) {
   }
 }
 
-export function OrderForm({ dealerSlug, dealerName, products }: Props) {
+function campaignTypeLabel(campaign: Campaign) {
+  switch (campaign.type) {
+    case "bundle-gift":
+      return "Hediye ürün";
+    case "quantity":
+      return "Adet avantajı";
+    case "cart-discount":
+      return "Sepet indirimi";
+  }
+}
+
+function campaignDescription(campaign: Campaign) {
+  switch (campaign.type) {
+    case "bundle-gift":
+      return `${campaign.requiredQuantity ?? 0} ${campaign.targetProductName ?? "ürün"} alana ${campaign.giftProductName ?? "hediye ürün"} hediye`;
+    case "quantity":
+      return `${campaign.requiredQuantity ?? 0} al ${campaign.payableQuantity ?? 0} öde: ${campaign.targetProductName ?? "seçili ürün"}`;
+    case "cart-discount":
+      return `${formatCurrency(campaign.minCartTotalCents ?? 0)} üzeri sepetlerde ${formatCurrency(campaign.discountAmountCents ?? 0)} indirim`;
+  }
+}
+
+export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props) {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
@@ -78,10 +102,21 @@ export function OrderForm({ dealerSlug, dealerName, products }: Props) {
     [products, quantities]
   );
 
-  const totalCents = selectedItems.reduce(
-    (sum, entry) => sum + entry.product.priceCents * entry.quantity,
-    0
+  const campaignResult = useMemo(
+    () =>
+      evaluateBestCampaign(
+        campaigns,
+        selectedItems.map((entry) => ({
+          productId: entry.product.id,
+          name: entry.product.name,
+          quantity: entry.quantity,
+          unitPriceCents: entry.product.priceCents
+        }))
+      ),
+    [campaigns, selectedItems]
   );
+  const totalCents = campaignResult.finalTotalCents;
+  const appliedCampaign = campaignResult.appliedCampaign;
 
   function handlePhoneChange(value: string) {
     setPhone(value);
@@ -192,7 +227,11 @@ export function OrderForm({ dealerSlug, dealerName, products }: Props) {
         })
       });
 
-      const payload = (await response.json()) as { orderId?: string; error?: string };
+      const payload = (await response.json()) as {
+        orderId?: string;
+        totalCents?: number;
+        error?: string;
+      };
 
       if (!response.ok || !payload.orderId) {
         throw new Error(payload.error ?? "Sipariş oluşturulamadı");
@@ -201,7 +240,7 @@ export function OrderForm({ dealerSlug, dealerName, products }: Props) {
       const params = new URLSearchParams({
         orderId: payload.orderId,
         customerName: fullName.trim(),
-        total: String(totalCents),
+        total: String(payload.totalCents ?? totalCents),
         paymentMethod,
         itemCount: String(selectedItems.reduce((sum, entry) => sum + entry.quantity, 0))
       });
@@ -225,6 +264,36 @@ export function OrderForm({ dealerSlug, dealerName, products }: Props) {
             <p className="caption">Miktarı artırıp azaltarak siparişinizi hazırlayın.</p>
           </div>
         </div>
+
+        {campaigns.length > 0 ? (
+          <div className="campaigns-section stack">
+            <div>
+              <h3>Kampanyalar</h3>
+              <p className="caption">Uygun kampanya siparişinize otomatik uygulanır.</p>
+            </div>
+            <div className="campaign-card-list">
+              {campaigns.map((campaign) => {
+                const isApplied = appliedCampaign?.campaignId === campaign.id;
+
+                return (
+                  <article
+                    key={campaign.id}
+                    className={`campaign-card ${isApplied ? "campaign-card-applied" : ""}`}
+                  >
+                    <div className="campaign-card-header">
+                      <span className="campaign-card-type">{campaignTypeLabel(campaign)}</span>
+                      {isApplied ? <span className="campaign-applied-label">Uygulanıyor</span> : null}
+                    </div>
+                    <div>
+                      <h4>{campaign.name}</h4>
+                      <p className="caption">{campaignDescription(campaign)}</p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         <div className="catalog-list">
           {products.map((product) => {
@@ -297,6 +366,28 @@ export function OrderForm({ dealerSlug, dealerName, products }: Props) {
                   <strong>{formatCurrency(entry.product.priceCents * entry.quantity)}</strong>
                 </div>
               ))}
+              {appliedCampaign ? (
+                <>
+                  <div className="separator" />
+                  <div className="campaign-summary stack compact-stack">
+                    <strong>Kampanya uygulandı: {appliedCampaign.name}</strong>
+                    {appliedCampaign.discountAmountCents > 0 ? (
+                      <div className="summary-row">
+                        <span>İndirim</span>
+                        <strong>-{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
+                      </div>
+                    ) : null}
+                    {appliedCampaign.giftItems.map((item) => (
+                      <div key={`${item.productId}_${item.name}`} className="summary-row">
+                        <span>Hediye ürün</span>
+                        <strong>
+                          {item.quantity} x {item.name.replace(" (Hediye)", "")}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : null}
               <div className="separator" />
               <div className="summary-row total-row">
                 <span>Toplam</span>
@@ -436,6 +527,12 @@ export function OrderForm({ dealerSlug, dealerName, products }: Props) {
                 <span className="caption">Ödeme</span>
                 <strong>{PAYMENT_OPTIONS.find((option) => option.value === paymentMethod)?.label}</strong>
               </div>
+              {appliedCampaign ? (
+                <div className="summary-row">
+                  <span className="caption">Kampanya</span>
+                  <strong>{appliedCampaign.name}</strong>
+                </div>
+              ) : null}
               <div className="summary-row total-row">
                 <span>Toplam</span>
                 <strong>{formatCurrency(totalCents)}</strong>

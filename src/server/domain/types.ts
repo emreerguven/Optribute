@@ -7,6 +7,7 @@ export type OrderStatus =
   | "completed"
   | "cancelled";
 export type PaymentStatus = "pending" | "paid" | "failed" | "cancelled";
+export type CampaignType = "bundle-gift" | "quantity" | "cart-discount";
 export const PAYMENT_METHODS = [
   "cash-on-delivery",
   "card-on-delivery",
@@ -33,6 +34,25 @@ export type Product = {
   priceCents: number;
   category: ProductCategory;
   isActive: boolean;
+};
+
+export type Campaign = {
+  id: string;
+  companyId: string;
+  name: string;
+  type: CampaignType;
+  isActive: boolean;
+  targetProductId: string | null;
+  targetProductName: string | null;
+  targetProductPriceCents: number | null;
+  giftProductId: string | null;
+  giftProductName: string | null;
+  giftProductPriceCents: number | null;
+  requiredQuantity: number | null;
+  payableQuantity: number | null;
+  minCartTotalCents: number | null;
+  discountAmountCents: number | null;
+  createdAt: string;
 };
 
 export type CustomerAddress = {
@@ -67,6 +87,16 @@ export type OrderItem = {
   name: string;
   quantity: number;
   unitPriceCents: number;
+};
+
+export type AppliedCampaign = {
+  campaignId: string;
+  name: string;
+  type: CampaignType;
+  discountAmountCents: number;
+  giftItems: OrderItem[];
+  adjustmentItems: OrderItem[];
+  benefitCents: number;
 };
 
 export type Order = {

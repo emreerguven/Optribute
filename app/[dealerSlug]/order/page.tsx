@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listProductsForCompany } from "@/src/server/domain/products/service";
 import { OrderForm } from "./order-form";
@@ -17,7 +18,10 @@ export default async function DealerOrderPage({
     notFound();
   }
 
-  const products = await listProductsForCompany(dealer.id);
+  const [products, campaigns] = await Promise.all([
+    listProductsForCompany(dealer.id),
+    listActiveCampaignsForCompany(dealer.id)
+  ]);
 
   return (
     <main className="shell order-shell stack">
@@ -41,7 +45,12 @@ export default async function DealerOrderPage({
         </div>
       </section>
 
-      <OrderForm dealerSlug={dealer.slug} dealerName={dealer.name} products={products} />
+      <OrderForm
+        dealerSlug={dealer.slug}
+        dealerName={dealer.name}
+        products={products}
+        campaigns={campaigns}
+      />
     </main>
   );
 }

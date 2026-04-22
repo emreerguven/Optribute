@@ -378,11 +378,66 @@ textarea {
 }
 
 .catalog-item,
+.campaign-card,
 .payment-option,
 .summary-card {
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(17, 35, 31, 0.08);
   border-radius: 22px;
+}
+
+.campaigns-section {
+  padding: 0.2rem 0 0.35rem;
+}
+
+.campaigns-section h3,
+.campaign-card h4 {
+  margin-bottom: 0.35rem;
+}
+
+.campaign-card-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.campaign-card {
+  padding: 1rem;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.campaign-card-applied {
+  border-color: rgba(15, 118, 110, 0.42);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 250, 0.82));
+  box-shadow: 0 14px 28px rgba(15, 118, 110, 0.1);
+}
+
+.campaign-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.campaign-card-type,
+.campaign-applied-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.34rem 0.72rem;
+}
+
+.campaign-card-type {
+  color: var(--muted);
+  background: rgba(17, 35, 31, 0.06);
+}
+
+.campaign-applied-label {
+  color: var(--brand-strong);
+  background: rgba(15, 118, 110, 0.12);
 }
 
 .catalog-item {
@@ -492,6 +547,13 @@ textarea {
 
 .summary-card {
   padding: 1rem;
+}
+
+.campaign-summary {
+  padding: 0.8rem;
+  border-radius: 16px;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--text);
 }
 
 .submit-button {
@@ -641,6 +703,11 @@ textarea {
   .order-action-button {
     width: 100%;
   }
+
+  .campaign-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (min-width: 721px) {
@@ -652,6 +719,10 @@ textarea {
   .catalog-item {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
+  }
+
+  .campaign-card-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .admin-detail-grid {

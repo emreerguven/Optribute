@@ -36,6 +36,12 @@ enum PaymentMethod {
   ACCOUNT_BALANCE
 }
 
+enum CampaignType {
+  BUNDLE_GIFT
+  QUANTITY
+  CART_DISCOUNT
+}
+
 model Company {
   id                   String    @id
   slug                 String    @unique
@@ -50,24 +56,50 @@ model Company {
   products             Product[]
   customers            Customer[]
   orders               Order[]
+  campaigns            Campaign[]
 }
 
 model Product {
-  id         String          @id
-  companyId  String
-  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name       String
-  imageUrl   String?
-  unitLabel  String
-  category   ProductCategory
-  priceCents Int
-  isActive   Boolean         @default(true)
-  sortOrder  Int             @default(0)
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  orderItems OrderItem[]
+  id              String     @id
+  companyId       String
+  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name            String
+  imageUrl        String?
+  unitLabel       String
+  category        ProductCategory
+  priceCents      Int
+  isActive        Boolean    @default(true)
+  sortOrder       Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  orderItems      OrderItem[]
+  targetCampaigns Campaign[] @relation("CampaignTargetProduct")
+  giftCampaigns   Campaign[] @relation("CampaignGiftProduct")
 
   @@index([companyId, isActive, sortOrder])
+}
+
+model Campaign {
+  id                   String       @id
+  companyId            String
+  company              Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name                 String
+  type                 CampaignType
+  isActive             Boolean      @default(true)
+  targetProductId      String?
+  targetProduct        Product?     @relation("CampaignTargetProduct", fields: [targetProductId], references: [id], onDelete: SetNull)
+  giftProductId        String?
+  giftProduct          Product?     @relation("CampaignGiftProduct", fields: [giftProductId], references: [id], onDelete: SetNull)
+  requiredQuantity     Int?
+  payableQuantity      Int?
+  minCartTotalCents    Int?
+  discountAmountCents  Int?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([companyId, isActive, createdAt])
+  @@index([targetProductId])
+  @@index([giftProductId])
 }
 
 model Customer {

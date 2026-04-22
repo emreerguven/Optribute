@@ -184,8 +184,8 @@ export function OrdersManager({ dealerSlug, initialOrders }: Props) {
 
                 <div className="summary-card stack compact-stack">
                   <div className="detail-label">Ürün özeti</div>
-                  {order.items.map((item) => (
-                    <div key={`${order.id}_${item.productId}`} className="summary-row">
+                  {order.items.map((item, index) => (
+                    <div key={`${order.id}_${item.productId}_${index}`} className="summary-row">
                       <span>
                         {item.quantity} x {item.name}
                       </span>

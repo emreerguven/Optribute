@@ -1,4 +1,11 @@
-import { PaymentMethod, PaymentStatus, PrismaClient, ProductCategory, OrderStatus } from "../src/generated/prisma/index";
+import {
+  CampaignType,
+  PaymentMethod,
+  PaymentStatus,
+  PrismaClient,
+  ProductCategory,
+  OrderStatus
+} from "../src/generated/prisma/index";
 import { normalizePhone } from "../src/server/domain/phone";
 
 const prisma = new PrismaClient();
@@ -7,6 +14,7 @@ async function main() {
   await prisma.payment.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.campaign.deleteMany();
   await prisma.customerAddress.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.product.deleteMany();
@@ -93,6 +101,40 @@ async function main() {
         priceCents: 6200,
         isActive: true,
         sortOrder: 2
+      }
+    ]
+  });
+
+  await prisma.campaign.createMany({
+    data: [
+      {
+        id: "camp_javsu_bundle_soda",
+        companyId: "company_javsu",
+        name: "1 Damacana alana 1 Soda hediye",
+        type: CampaignType.BUNDLE_GIFT,
+        isActive: true,
+        targetProductId: "prod_19l_javsu",
+        giftProductId: "prod_soda_javsu",
+        requiredQuantity: 1
+      },
+      {
+        id: "camp_javsu_5_al_3_ode",
+        companyId: "company_javsu",
+        name: "5 al 3 öde",
+        type: CampaignType.QUANTITY,
+        isActive: false,
+        targetProductId: "prod_19l_javsu",
+        requiredQuantity: 5,
+        payableQuantity: 3
+      },
+      {
+        id: "camp_javsu_1000_ustu_200_indirim",
+        companyId: "company_javsu",
+        name: "1000 TL üzeri 200 TL indirim",
+        type: CampaignType.CART_DISCOUNT,
+        isActive: false,
+        minCartTotalCents: 100000,
+        discountAmountCents: 20000
       }
     ]
   });

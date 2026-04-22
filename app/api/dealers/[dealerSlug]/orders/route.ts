@@ -99,7 +99,24 @@ export async function POST(
   try {
     const draft = parseOrderDraft(body);
     const order = await createOrder(dealer.id, draft);
-    return NextResponse.json({ ok: true, orderId: order.id });
+    const totalCents =
+      order.payments[0]?.amountCents ??
+      order.items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
+    const discountLine = order.items.find((item) => item.unitPriceCents < 0);
+    const giftItems = order.items.filter((item) => item.unitPriceCents === 0 && item.name.includes("(Hediye)"));
+
+    return NextResponse.json({
+      ok: true,
+      orderId: order.id,
+      totalCents,
+      campaign: discountLine || giftItems.length > 0
+        ? {
+            name: discountLine?.name.replace("Kampanya indirimi: ", "") ?? "Hediye ürün kampanyası",
+            discountAmountCents: discountLine ? Math.abs(discountLine.unitPriceCents) : 0,
+            giftItems
+          }
+        : null
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Order could not be created";
     return NextResponse.json({ error: message }, { status: 400 });
