@@ -440,6 +440,48 @@ textarea {
   background: rgba(15, 118, 110, 0.12);
 }
 
+.campaign-admin-card {
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.campaign-admin-card-editing {
+  border-color: rgba(15, 118, 110, 0.5);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 250, 0.78));
+  box-shadow: 0 16px 34px rgba(15, 118, 110, 0.11);
+}
+
+.campaign-admin-card-updated {
+  border-color: rgba(15, 118, 110, 0.38);
+  background: rgba(240, 253, 250, 0.72);
+}
+
+.campaign-editing-label,
+.campaign-updated-label {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.38rem 0.76rem;
+}
+
+.campaign-editing-label {
+  color: var(--brand-strong);
+  background: rgba(15, 118, 110, 0.14);
+}
+
+.campaign-updated-label {
+  color: #0f5132;
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.campaign-edit-form {
+  padding: 1rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(15, 118, 110, 0.16);
+}
+
 .catalog-item {
   display: grid;
   gap: 1rem;

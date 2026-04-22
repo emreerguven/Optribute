@@ -271,6 +271,7 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
   const [editingForm, setEditingForm] = useState<CampaignFormState>(() => createEmptyForm(products));
   const [message, setMessage] = useState<string | null>(null);
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
+  const [recentlyUpdatedCampaignId, setRecentlyUpdatedCampaignId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -393,7 +394,13 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
         )
       );
       setEditingCampaignId(null);
+      setRecentlyUpdatedCampaignId(updatedCampaign.id);
       setMessage("Kampanya güncellendi.");
+      window.setTimeout(() => {
+        setRecentlyUpdatedCampaignId((current) =>
+          current === updatedCampaign.id ? null : current
+        );
+      }, 2600);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Kampanya güncellenemedi");
     } finally {
@@ -448,12 +455,24 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
             {sortedCampaigns.map((campaign) => {
               const isStatusUpdating = activeCampaignId === campaign.id;
               const isEditing = editingCampaignId === campaign.id;
+              const wasRecentlyUpdated = recentlyUpdatedCampaignId === campaign.id;
 
               return (
-                <article key={campaign.id} className="order-card stack">
+                <article
+                  key={campaign.id}
+                  className={`order-card stack campaign-admin-card ${
+                    isEditing ? "campaign-admin-card-editing" : ""
+                  } ${wasRecentlyUpdated ? "campaign-admin-card-updated" : ""}`}
+                >
                   <div className="product-admin-topline">
                     <div className="stack compact-stack">
                       <div className="tag-row">
+                        {isEditing ? (
+                          <span className="campaign-editing-label">Kampanya düzenleniyor</span>
+                        ) : null}
+                        {wasRecentlyUpdated ? (
+                          <span className="campaign-updated-label">Güncellendi</span>
+                        ) : null}
                         <span className={`status ${campaign.isActive ? "" : "status-muted"}`}>
                           {campaign.isActive ? "Aktif" : "Pasif"}
                         </span>
@@ -492,7 +511,11 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
                   </div>
 
                   {isEditing ? (
-                    <form className="stack" onSubmit={handleUpdateCampaign}>
+                    <form className="stack campaign-edit-form" onSubmit={handleUpdateCampaign}>
+                      <div>
+                        <span className="detail-label">Düzenlenen kampanya</span>
+                        <h3>{campaign.name}</h3>
+                      </div>
                       <CampaignFormFields
                         form={editingForm}
                         onChange={updateEditingForm}
