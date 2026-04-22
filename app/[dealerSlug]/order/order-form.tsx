@@ -57,7 +57,7 @@ function categoryLabel(category: Product["category"]) {
 function campaignTypeLabel(campaign: Campaign) {
   switch (campaign.type) {
     case "bundle-gift":
-      return "Kampanya ürünü";
+      return "Joker ürünü";
     case "quantity":
       return "Adet avantajı";
     case "cart-discount":
@@ -68,7 +68,7 @@ function campaignTypeLabel(campaign: Campaign) {
 function campaignDescription(campaign: Campaign) {
   switch (campaign.type) {
     case "bundle-gift":
-      return `${campaign.requiredQuantity ?? 0} adet ${campaign.targetProductName ?? "ürün"} ile ${campaign.giftProductName ?? "kampanya ürünü"} dahil`;
+      return `${campaign.requiredQuantity ?? 0} adet ${campaign.targetProductName ?? "ürün"} ile ${campaign.giftProductName ?? "Joker ürünü"} siparişinize dahil`;
     case "quantity":
       return `${campaign.requiredQuantity ?? 0} al ${campaign.payableQuantity ?? 0} öde: ${campaign.targetProductName ?? "seçili ürün"}`;
     case "cart-discount":
@@ -383,16 +383,10 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                       </div>
                     ))}
                     {appliedCampaign.discountAmountCents > 0 ? (
-                      <>
-                        <div className="summary-row">
-                          <span>Kampanya avantajı</span>
-                          <strong>-{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
-                        </div>
-                        <div className="summary-row">
-                          <span>Toplam avantaj</span>
-                          <strong>{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
-                        </div>
-                      </>
+                      <div className="summary-row">
+                        <span>Joker indirimi</span>
+                        <strong>-{formatCurrency(appliedCampaign.discountAmountCents)}</strong>
+                      </div>
                     ) : null}
                   </div>
                 </>
