@@ -7,6 +7,8 @@ export type OrderStatus =
   | "completed"
   | "cancelled";
 export type PaymentStatus = "pending" | "paid" | "failed" | "cancelled";
+export const ORDER_SOURCES = ["qr", "manual"] as const;
+export type OrderSource = (typeof ORDER_SOURCES)[number];
 export type CampaignType = "bundle-gift" | "quantity" | "cart-discount";
 export const PAYMENT_METHODS = [
   "cash-on-delivery",
@@ -110,6 +112,7 @@ export type Order = {
   phone: string;
   addressLine: string;
   status: OrderStatus;
+  source: OrderSource;
   createdAt: string;
   notes?: string | null;
   items: OrderItem[];
@@ -125,6 +128,7 @@ export type OrderDraft = {
   fullName: string;
   addressLine: string;
   paymentMethod: PaymentMethod;
+  source?: OrderSource;
   notes?: string;
   items: Array<{
     productId: string;

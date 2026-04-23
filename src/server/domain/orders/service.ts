@@ -14,6 +14,7 @@ import type {
   Order,
   OrderDraft,
   OrderPaymentSnapshot,
+  OrderSource,
   OrderStatus,
   PaymentMethod,
   PaymentStatus
@@ -117,6 +118,10 @@ function toPrismaOrderStatus(status: OrderStatus): PrismaOrderStatus {
   throw new Error(`Unsupported order status: ${exhaustiveStatus}`);
 }
 
+function toOrderSource(source: string): OrderSource {
+  return source === "manual" ? "manual" : "qr";
+}
+
 function toOrder(order: {
   id: string;
   companyId: string;
@@ -126,6 +131,7 @@ function toOrder(order: {
   addressLine: string;
   deliveryNotes: string | null;
   status: PrismaOrderStatus;
+  source: string;
   submittedAt: Date;
   orderItems: Array<{
     productId: string | null;
@@ -150,6 +156,7 @@ function toOrder(order: {
     phone: order.phone,
     addressLine: order.addressLine,
     status: toOrderStatus(order.status),
+    source: toOrderSource(order.source),
     createdAt: order.submittedAt.toISOString(),
     notes: order.deliveryNotes,
     items: order.orderItems.map((item) => ({
@@ -376,7 +383,7 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         addressLine,
         deliveryNotes: draft.notes?.trim() || null,
         status: PrismaOrderStatus.PENDING,
-        source: "qr",
+        source: draft.source ?? "qr",
         orderItems: {
           create: orderItems.map((item) => ({
             id: `order_item_${randomUUID()}`,

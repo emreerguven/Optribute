@@ -4,6 +4,7 @@ import { formatCurrency } from "@/src/lib/currency";
 import { getDealerBrandStyle } from "@/src/lib/branding";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listOrdersForCompany } from "@/src/server/domain/orders/service";
+import { listProductsForCompany } from "@/src/server/domain/products/service";
 import { OrdersManager } from "./orders-manager";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,10 @@ export default async function DealerOrdersAdminPage({
     notFound();
   }
 
-  const orders = await listOrdersForCompany(dealer.id);
+  const [orders, products] = await Promise.all([
+    listOrdersForCompany(dealer.id),
+    listProductsForCompany(dealer.id)
+  ]);
   const pendingOrders = orders.filter(
     (order) => order.status !== "completed" && order.status !== "cancelled"
   );
@@ -61,7 +65,7 @@ export default async function DealerOrdersAdminPage({
         </div>
       </section>
 
-      <OrdersManager dealerSlug={dealer.slug} initialOrders={orders} />
+      <OrdersManager dealerSlug={dealer.slug} initialOrders={orders} products={products} />
     </main>
   );
 }

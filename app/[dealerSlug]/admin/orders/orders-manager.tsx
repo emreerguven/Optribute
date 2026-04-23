@@ -1,13 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { formatCurrency } from "@/src/lib/currency";
-import type { Order, OrderStatus } from "@/src/server/domain/types";
+import type {
+  Order,
+  OrderSource,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+  Product
+} from "@/src/server/domain/types";
 
 type Props = {
   dealerSlug: string;
   initialOrders: Order[];
+  products: Product[];
 };
+
+type ManualOrderForm = {
+  phone: string;
+  fullName: string;
+  addressLine: string;
+  notes: string;
+  paymentMethod: PaymentMethod;
+};
+
+type SortOption = "newest" | "oldest" | "total-desc" | "total-asc";
+type OrderStatusFilter = "all" | OrderStatus;
+type PaymentStatusFilter = "all" | PaymentStatus;
+type SourceFilter = "all" | OrderSource;
+
+type LookupPayload = {
+  found: boolean;
+  customer?: {
+    fullName: string;
+    phone: string;
+    addressLine: string;
+    notes?: string | null;
+  };
+  error?: string;
+};
+
+const EMPTY_MANUAL_FORM: ManualOrderForm = {
+  phone: "",
+  fullName: "",
+  addressLine: "",
+  notes: "",
+  paymentMethod: "cash-on-delivery"
+};
+
+const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string }> = [
+  { value: "cash-on-delivery", label: "Kapıda nakit" },
+  { value: "card-on-delivery", label: "Kapıda kart" },
+  { value: "online", label: "Online" }
+];
 
 function formatOrderTime(timestamp: string) {
   return new Intl.DateTimeFormat("tr-TR", {
@@ -76,6 +122,18 @@ function orderStatusLabel(status: string) {
   }
 }
 
+function sourceLabel(source: OrderSource) {
+  return source === "manual" ? "Manuel" : "QR";
+}
+
+function getOrderTotal(order: Order) {
+  return order.items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
+}
+
+function normalizeSearch(value: string) {
+  return value.toLocaleLowerCase("tr-TR").replace(/\s+/g, " ").trim();
+}
+
 function getActionOptions(status: OrderStatus) {
   switch (status) {
     case "pending":
@@ -97,10 +155,188 @@ function getActionOptions(status: OrderStatus) {
   }
 }
 
-export function OrdersManager({ dealerSlug, initialOrders }: Props) {
+export function OrdersManager({ dealerSlug, initialOrders, products }: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [manualForm, setManualForm] = useState<ManualOrderForm>(EMPTY_MANUAL_FORM);
+  const [manualQuantities, setManualQuantities] = useState<Record<string, number>>({});
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [lookupMessage, setLookupMessage] = useState<string | null>(null);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatusFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
+
+  const selectedManualItems = useMemo(
+    () =>
+      products
+        .map((product) => ({
+          product,
+          quantity: manualQuantities[product.id] ?? 0
+        }))
+        .filter((entry) => entry.quantity > 0),
+    [manualQuantities, products]
+  );
+
+  const manualTotal = selectedManualItems.reduce(
+    (sum, entry) => sum + entry.quantity * entry.product.priceCents,
+    0
+  );
+
+  const visibleOrders = useMemo(() => {
+    const query = normalizeSearch(searchTerm);
+
+    return [...orders]
+      .filter((order) => {
+        const primaryPayment = order.payments[0];
+        const searchable = normalizeSearch(`${order.customerName} ${order.phone}`);
+
+        if (query && !searchable.includes(query)) {
+          return false;
+        }
+
+        if (statusFilter !== "all" && order.status !== statusFilter) {
+          return false;
+        }
+
+        if (paymentStatusFilter !== "all" && primaryPayment?.status !== paymentStatusFilter) {
+          return false;
+        }
+
+        if (sourceFilter !== "all" && order.source !== sourceFilter) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((first, second) => {
+        switch (sortOption) {
+          case "oldest":
+            return new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime();
+          case "total-desc":
+            return getOrderTotal(second) - getOrderTotal(first);
+          case "total-asc":
+            return getOrderTotal(first) - getOrderTotal(second);
+          case "newest":
+          default:
+            return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+        }
+      });
+  }, [orders, paymentStatusFilter, searchTerm, sortOption, sourceFilter, statusFilter]);
+
+  function updateManualQuantity(productId: string, value: number) {
+    setManualQuantities((current) => ({
+      ...current,
+      [productId]: Math.max(0, Math.floor(value))
+    }));
+  }
+
+  async function handleCustomerLookup() {
+    if (!manualForm.phone.trim()) {
+      setLookupMessage("Telefon numarası girin.");
+      return;
+    }
+
+    setIsLookingUp(true);
+    setLookupMessage(null);
+    setCreateMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/dealers/${dealerSlug}/customers/lookup?phone=${encodeURIComponent(manualForm.phone)}`
+      );
+      const payload = (await response.json()) as LookupPayload;
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Müşteri bilgisi alınamadı");
+      }
+
+      if (!payload.found || !payload.customer) {
+        setLookupMessage("Kayıt bulunamadı. Bilgileri manuel girin.");
+        return;
+      }
+
+      setManualForm((current) => ({
+        ...current,
+        phone: payload.customer?.phone ?? current.phone,
+        fullName: payload.customer?.fullName ?? current.fullName,
+        addressLine: payload.customer?.addressLine ?? current.addressLine,
+        notes: payload.customer?.notes ?? current.notes
+      }));
+      setLookupMessage("Müşteri bilgileri getirildi.");
+    } catch (error) {
+      const nextMessage = error instanceof Error ? error.message : "Müşteri bilgisi alınamadı";
+      setLookupMessage(nextMessage);
+    } finally {
+      setIsLookingUp(false);
+    }
+  }
+
+  async function handleCreateOrder(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCreateMessage(null);
+    setMessage(null);
+
+    if (!manualForm.phone.trim() || !manualForm.fullName.trim() || !manualForm.addressLine.trim()) {
+      setCreateMessage("Telefon, ad soyad ve adres zorunludur.");
+      return;
+    }
+
+    if (selectedManualItems.length === 0) {
+      setCreateMessage("En az bir ürün seçin.");
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const response = await fetch(`/api/dealers/${dealerSlug}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          phone: manualForm.phone,
+          fullName: manualForm.fullName,
+          addressLine: manualForm.addressLine,
+          notes: manualForm.notes,
+          payment_method: manualForm.paymentMethod,
+          source: "manual",
+          items: selectedManualItems.map((entry) => ({
+            productId: entry.product.id,
+            quantity: entry.quantity
+          }))
+        })
+      });
+      const payload = (await response.json()) as {
+        order?: Order;
+        error?: string;
+        paymentPageUrl?: string;
+      };
+
+      if (!response.ok || !payload.order) {
+        throw new Error(payload.error ?? "Sipariş eklenemedi");
+      }
+
+      setOrders((current) => [payload.order!, ...current.filter((order) => order.id !== payload.order!.id)]);
+      setManualForm(EMPTY_MANUAL_FORM);
+      setManualQuantities({});
+      setLookupMessage(null);
+      setCreateMessage(
+        payload.paymentPageUrl ? "Sipariş eklendi. Online ödeme bekliyor." : "Sipariş eklendi."
+      );
+    } catch (error) {
+      const nextMessage = error instanceof Error ? error.message : "Sipariş eklenemedi";
+      setCreateMessage(nextMessage);
+    } finally {
+      setIsCreating(false);
+    }
+  }
 
   async function handleStatusUpdate(orderId: string, nextStatus: OrderStatus) {
     setActiveOrderId(orderId);
@@ -138,25 +374,240 @@ export function OrdersManager({ dealerSlug, initialOrders }: Props) {
 
   return (
     <section className="panel stack">
-      <div>
-        <span className="kicker">Gelen siparişler</span>
-        <h2>Sipariş listesi</h2>
-        <p className="caption">Müşteri, adres, ödeme ve ürün bilgilerini görün.</p>
+      <div className="admin-console-head">
+        <div>
+          <span className="kicker">Sipariş ekranı</span>
+          <h2>Sipariş listesi</h2>
+          <p className="caption">Siparişleri arayın, süzün ve yeni sipariş ekleyin.</p>
+        </div>
+        <button type="button" className="button" onClick={() => setIsCreateOpen((current) => !current)}>
+          {isCreateOpen ? "Formu kapat" : "Yeni sipariş ekle"}
+        </button>
       </div>
+
+      <div className="admin-console-toolbar">
+        <label>
+          Arama
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Ad veya telefon"
+          />
+        </label>
+        <label>
+          Sipariş durumu
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as OrderStatusFilter)}
+          >
+            <option value="all">Tümü</option>
+            <option value="pending">Yeni</option>
+            <option value="preparing">Hazırlanıyor</option>
+            <option value="completed">Tamamlandı</option>
+            <option value="cancelled">İptal</option>
+          </select>
+        </label>
+        <label>
+          Ödeme durumu
+          <select
+            value={paymentStatusFilter}
+            onChange={(event) => setPaymentStatusFilter(event.target.value as PaymentStatusFilter)}
+          >
+            <option value="all">Tümü</option>
+            <option value="pending">Bekliyor</option>
+            <option value="paid">Ödendi</option>
+            <option value="failed">Ödeme alınamadı</option>
+            <option value="cancelled">İptal</option>
+          </select>
+        </label>
+        <label>
+          Kaynak
+          <select
+            value={sourceFilter}
+            onChange={(event) => setSourceFilter(event.target.value as SourceFilter)}
+          >
+            <option value="all">Tümü</option>
+            <option value="qr">QR</option>
+            <option value="manual">Manuel</option>
+          </select>
+        </label>
+        <label>
+          Sıralama
+          <select value={sortOption} onChange={(event) => setSortOption(event.target.value as SortOption)}>
+            <option value="newest">En yeni</option>
+            <option value="oldest">En eski</option>
+            <option value="total-desc">Tutar yüksekten düşüğe</option>
+            <option value="total-asc">Tutar düşükten yükseğe</option>
+          </select>
+        </label>
+      </div>
+
+      {isCreateOpen ? (
+        <form className="manual-order-panel stack" onSubmit={handleCreateOrder}>
+          <div className="order-topline">
+            <div>
+              <span className="detail-label">Yeni sipariş</span>
+              <h3>Manuel sipariş oluştur</h3>
+            </div>
+            <span className="source-badge source-badge-manual">Manuel</span>
+          </div>
+
+          <div className="manual-customer-grid">
+            <label className="manual-phone-field">
+              Telefon
+              <div className="phone-row">
+                <input
+                  value={manualForm.phone}
+                  onChange={(event) =>
+                    setManualForm((current) => ({ ...current, phone: event.target.value }))
+                  }
+                  placeholder="05xx xxx xx xx"
+                />
+                <button
+                  type="button"
+                  className="button-secondary admin-inline-button"
+                  onClick={handleCustomerLookup}
+                  disabled={isLookingUp}
+                >
+                  {isLookingUp ? "Aranıyor..." : "Müşteriyi getir"}
+                </button>
+              </div>
+            </label>
+            <label>
+              Ad soyad
+              <input
+                value={manualForm.fullName}
+                onChange={(event) =>
+                  setManualForm((current) => ({ ...current, fullName: event.target.value }))
+                }
+                placeholder="Müşteri adı"
+              />
+            </label>
+            <label className="manual-form-wide">
+              Adres
+              <textarea
+                value={manualForm.addressLine}
+                onChange={(event) =>
+                  setManualForm((current) => ({ ...current, addressLine: event.target.value }))
+                }
+                placeholder="Teslimat adresi"
+              />
+            </label>
+            <label>
+              Not
+              <input
+                value={manualForm.notes}
+                onChange={(event) =>
+                  setManualForm((current) => ({ ...current, notes: event.target.value }))
+                }
+                placeholder="Kapı notu, saat tercihi vb."
+              />
+            </label>
+            <label>
+              Ödeme yöntemi
+              <select
+                value={manualForm.paymentMethod}
+                onChange={(event) =>
+                  setManualForm((current) => ({
+                    ...current,
+                    paymentMethod: event.target.value as PaymentMethod
+                  }))
+                }
+              >
+                {PAYMENT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {lookupMessage ? <div className="note">{lookupMessage}</div> : null}
+
+          <div className="manual-products stack">
+            <div>
+              <span className="detail-label">Ürünler</span>
+              <p className="caption">Siparişe eklenecek adetleri girin.</p>
+            </div>
+            {products.length === 0 ? (
+              <div className="note warning">Aktif ürün bulunmuyor.</div>
+            ) : (
+              <div className="manual-product-grid">
+                {products.map((product) => {
+                  const quantity = manualQuantities[product.id] ?? 0;
+
+                  return (
+                    <div key={product.id} className="manual-product-card">
+                      <div>
+                        <strong>{product.name}</strong>
+                        <span className="caption">{formatCurrency(product.priceCents)}</span>
+                      </div>
+                      <div className="manual-quantity-control">
+                        <button
+                          type="button"
+                          onClick={() => updateManualQuantity(product.id, quantity - 1)}
+                          aria-label={`${product.name} azalt`}
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          value={quantity}
+                          onChange={(event) => updateManualQuantity(product.id, Number(event.target.value))}
+                          aria-label={`${product.name} adet`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateManualQuantity(product.id, quantity + 1)}
+                          aria-label={`${product.name} artır`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="summary-row total-row manual-total-row">
+            <span>Seçilen ürün tutarı</span>
+            <strong>{formatCurrency(manualTotal)}</strong>
+          </div>
+
+          {createMessage ? (
+            <div className={`note ${createMessage.includes("eklendi") ? "" : "warning"}`}>
+              {createMessage}
+            </div>
+          ) : null}
+
+          <button type="submit" className="button admin-submit" disabled={isCreating || products.length === 0}>
+            {isCreating ? "Ekleniyor..." : "Siparişi ekle"}
+          </button>
+        </form>
+      ) : null}
 
       {message ? (
         <div className={`note ${message.includes("güncellendi") ? "" : "warning"}`}>{message}</div>
       ) : null}
 
+      <div className="order-list-summary">
+        <strong>{visibleOrders.length}</strong>
+        <span className="caption">sipariş gösteriliyor</span>
+      </div>
+
       {orders.length === 0 ? (
         <div className="note">Bu bayi için henüz sipariş bulunmuyor.</div>
+      ) : visibleOrders.length === 0 ? (
+        <div className="note">Arama ve filtrelere uygun sipariş bulunamadı.</div>
       ) : (
         <div className="admin-order-list">
-          {orders.map((order) => {
-            const total = order.items.reduce(
-              (sum, item) => sum + item.quantity * item.unitPriceCents,
-              0
-            );
+          {visibleOrders.map((order) => {
+            const total = getOrderTotal(order);
             const primaryPayment = order.payments[0];
             const actionOptions = getActionOptions(order.status);
             const isUpdating = activeOrderId === order.id;
@@ -168,7 +619,12 @@ export function OrdersManager({ dealerSlug, initialOrders }: Props) {
                     <span className="caption">Geliş zamanı</span>
                     <h3>{formatOrderTime(order.createdAt)}</h3>
                   </div>
-                  <span className="status">{orderStatusLabel(order.status)}</span>
+                  <div className="order-badge-row">
+                    <span className="status">{orderStatusLabel(order.status)}</span>
+                    <span className={`source-badge source-badge-${order.source}`}>
+                      {sourceLabel(order.source)}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="admin-detail-grid">

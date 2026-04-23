@@ -6,7 +6,7 @@ import {
   setPaymentReferenceForOrder
 } from "@/src/server/domain/orders/service";
 import { initializeIyzicoCheckoutForm } from "@/src/server/payments/iyzico";
-import { PAYMENT_METHODS, type OrderDraft } from "@/src/server/domain/types";
+import { ORDER_SOURCES, PAYMENT_METHODS, type OrderDraft } from "@/src/server/domain/types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -16,12 +16,16 @@ function isPaymentMethod(value: unknown): value is OrderDraft["paymentMethod"] {
   return typeof value === "string" && PAYMENT_METHODS.some((method) => method === value);
 }
 
+function isOrderSource(value: unknown): value is NonNullable<OrderDraft["source"]> {
+  return typeof value === "string" && ORDER_SOURCES.some((source) => source === value);
+}
+
 function parseOrderDraft(body: unknown): OrderDraft {
   if (!isRecord(body)) {
     throw new Error("Request body must be a JSON object");
   }
 
-  const { phone, fullName, addressLine, notes, items, payment_method: paymentMethod } = body;
+  const { phone, fullName, addressLine, notes, items, payment_method: paymentMethod, source } = body;
 
   if (typeof phone !== "string" || !phone.trim()) {
     throw new Error("Phone is required");
@@ -41,6 +45,10 @@ function parseOrderDraft(body: unknown): OrderDraft {
 
   if (notes !== undefined && typeof notes !== "string") {
     throw new Error("Notes must be a string");
+  }
+
+  if (source !== undefined && !isOrderSource(source)) {
+    throw new Error("source is invalid");
   }
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -77,6 +85,7 @@ function parseOrderDraft(body: unknown): OrderDraft {
     fullName,
     addressLine,
     paymentMethod,
+    source: source ?? "qr",
     notes,
     items: normalizedItems
   };
@@ -127,6 +136,7 @@ export async function POST(
       return NextResponse.json({
         ok: true,
         orderId: order.id,
+        order,
         totalCents,
         paymentPageUrl: checkout.paymentPageUrl,
         paymentToken: checkout.token
@@ -136,6 +146,7 @@ export async function POST(
     return NextResponse.json({
       ok: true,
       orderId: order.id,
+      order,
       totalCents,
       campaign: discountLine
         ? {
