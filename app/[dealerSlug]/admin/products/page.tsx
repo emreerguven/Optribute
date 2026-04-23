@@ -42,6 +42,9 @@ export default async function DealerProductsAdminPage({
               <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
                 Kampanyaları yönet
               </Link>
+              <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
+                Kuryeleri yönet
+              </Link>
               <LogoutButton dealerSlug={dealer.slug} />
             </div>
           </div>

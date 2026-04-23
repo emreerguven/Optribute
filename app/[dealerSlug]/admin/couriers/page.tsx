@@ -3,14 +3,13 @@ import { notFound } from "next/navigation";
 import { getDealerBrandStyle } from "@/src/lib/branding";
 import { requireAdminPage } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
-import { listCampaignsForCompany } from "@/src/server/domain/campaigns/service";
-import { listAdminProductsForCompany } from "@/src/server/domain/products/service";
+import { listCouriersForCompany } from "@/src/server/domain/couriers/service";
 import { LogoutButton } from "../logout-button";
-import { CampaignsManager } from "./campaigns-manager";
+import { CouriersManager } from "./couriers-manager";
 
 export const dynamic = "force-dynamic";
 
-export default async function DealerCampaignsAdminPage({
+export default async function DealerCouriersAdminPage({
   params
 }: {
   params: Promise<{ dealerSlug: string }>;
@@ -24,10 +23,7 @@ export default async function DealerCampaignsAdminPage({
 
   await requireAdminPage(dealer);
 
-  const [campaigns, products] = await Promise.all([
-    listCampaignsForCompany(dealer.id),
-    listAdminProductsForCompany(dealer.id)
-  ]);
+  const couriers = await listCouriersForCompany(dealer.id);
   const brandStyle = getDealerBrandStyle(dealer.primaryColor);
 
   return (
@@ -35,9 +31,9 @@ export default async function DealerCampaignsAdminPage({
       <section className="hero hero-compact stack">
         <div className="hero-grid">
           <div>
-            <span className="kicker">Bayi kampanyaları</span>
-            <h1>Kampanyalar</h1>
-            <p className="lead">Siparişlerde otomatik çalışacak kampanyaları yönetin.</p>
+            <span className="kicker">Kurye yönetimi</span>
+            <h1>Kuryeler</h1>
+            <p className="lead">Kuryeleri ekleyin, aktifliğini yönetin ve sipariş atamalarına hazırlayın.</p>
             <div className="actions">
               <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
                 Siparişleri gör
@@ -45,28 +41,26 @@ export default async function DealerCampaignsAdminPage({
               <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
                 Ürünleri yönet
               </Link>
-              <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
-                Kuryeleri yönet
+              <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
+                Kampanyaları yönet
               </Link>
               <LogoutButton dealerSlug={dealer.slug} />
             </div>
           </div>
           <div className="stats-grid">
             <div className="metric">
-              <div className="metric-value">{campaigns.length}</div>
-              <div>Toplam kampanya</div>
+              <div className="metric-value">{couriers.length}</div>
+              <div>Toplam kurye</div>
             </div>
             <div className="metric">
-              <div className="metric-value">
-                {campaigns.filter((campaign) => campaign.isActive).length}
-              </div>
-              <div>Aktif kampanya</div>
+              <div className="metric-value">{couriers.filter((courier) => courier.isActive).length}</div>
+              <div>Aktif kurye</div>
             </div>
           </div>
         </div>
       </section>
 
-      <CampaignsManager dealerSlug={dealer.slug} initialCampaigns={campaigns} products={products} />
+      <CouriersManager dealerSlug={dealer.slug} initialCouriers={couriers} />
     </main>
   );
 }

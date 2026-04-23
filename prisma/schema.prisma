@@ -42,6 +42,13 @@ enum CampaignType {
   CART_DISCOUNT
 }
 
+enum DeliveryStatus {
+  UNASSIGNED
+  ASSIGNED
+  OUT_FOR_DELIVERY
+  DELIVERED
+}
+
 model Company {
   id                   String    @id
   slug                 String    @unique
@@ -62,6 +69,7 @@ model Company {
   campaigns            Campaign[]
   adminUsers           AdminUser[]
   adminLoginCodes      AdminLoginCode[]
+  couriers             Courier[]
 }
 
 model AdminUser {
@@ -175,12 +183,15 @@ model Order {
   company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customerId       String?
   customer         Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  courierId        String?
+  courier          Courier?    @relation(fields: [courierId], references: [id], onDelete: SetNull)
   customerName     String
   phone            String
   normalizedPhone  String
   addressLine      String
   deliveryNotes    String?
   status           OrderStatus @default(PENDING)
+  deliveryStatus   DeliveryStatus @default(UNASSIGNED)
   source           String      @default("qr")
   submittedAt      DateTime    @default(now())
   createdAt        DateTime    @default(now())
@@ -190,6 +201,22 @@ model Order {
 
   @@index([companyId, submittedAt])
   @@index([companyId, status, submittedAt])
+  @@index([companyId, deliveryStatus, submittedAt])
+  @@index([courierId, deliveryStatus])
+}
+
+model Courier {
+  id         String   @id
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fullName   String
+  phone      String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  orders     Order[]
+
+  @@index([companyId, isActive, createdAt])
 }
 
 model OrderItem {

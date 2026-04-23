@@ -9,6 +9,13 @@ export type OrderStatus =
 export type PaymentStatus = "pending" | "paid" | "failed" | "cancelled";
 export const ORDER_SOURCES = ["qr", "manual"] as const;
 export type OrderSource = (typeof ORDER_SOURCES)[number];
+export const DELIVERY_STATUSES = [
+  "unassigned",
+  "assigned",
+  "out-for-delivery",
+  "delivered"
+] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
 export type CampaignType = "bundle-gift" | "quantity" | "cart-discount";
 export const PAYMENT_METHODS = [
   "cash-on-delivery",
@@ -39,6 +46,15 @@ export type Product = {
   priceCents: number;
   category: ProductCategory;
   isActive: boolean;
+};
+
+export type Courier = {
+  id: string;
+  companyId: string;
+  fullName: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: string;
 };
 
 export type Campaign = {
@@ -113,6 +129,8 @@ export type Order = {
   addressLine: string;
   status: OrderStatus;
   source: OrderSource;
+  deliveryStatus: DeliveryStatus;
+  courier: Courier | null;
   createdAt: string;
   notes?: string | null;
   items: OrderItem[];

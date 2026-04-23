@@ -5,6 +5,7 @@ import { getDealerBrandStyle } from "@/src/lib/branding";
 import { requireAdminPage } from "@/src/server/auth/guards";
 import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
+import { listCouriersForCompany } from "@/src/server/domain/couriers/service";
 import { listOrdersForCompany } from "@/src/server/domain/orders/service";
 import { listProductsForCompany } from "@/src/server/domain/products/service";
 import { LogoutButton } from "../logout-button";
@@ -26,10 +27,11 @@ export default async function DealerOrdersAdminPage({
 
   await requireAdminPage(dealer);
 
-  const [orders, products, campaigns] = await Promise.all([
+  const [orders, products, campaigns, couriers] = await Promise.all([
     listOrdersForCompany(dealer.id),
     listProductsForCompany(dealer.id),
-    listActiveCampaignsForCompany(dealer.id)
+    listActiveCampaignsForCompany(dealer.id),
+    listCouriersForCompany(dealer.id)
   ]);
   const pendingOrders = orders.filter(
     (order) => order.status !== "completed" && order.status !== "cancelled"
@@ -56,6 +58,9 @@ export default async function DealerOrdersAdminPage({
               <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
                 Kampanyaları yönet
               </Link>
+              <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
+                Kuryeleri yönet
+              </Link>
               <LogoutButton dealerSlug={dealer.slug} />
             </div>
           </div>
@@ -77,6 +82,7 @@ export default async function DealerOrdersAdminPage({
         initialOrders={orders}
         products={products}
         campaigns={campaigns}
+        couriers={couriers}
       />
     </main>
   );

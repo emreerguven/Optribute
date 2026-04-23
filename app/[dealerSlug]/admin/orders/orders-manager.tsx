@@ -5,6 +5,8 @@ import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
 import type {
   Campaign,
+  Courier,
+  DeliveryStatus,
   Order,
   OrderSource,
   OrderStatus,
@@ -18,6 +20,7 @@ type Props = {
   initialOrders: Order[];
   products: Product[];
   campaigns: Campaign[];
+  couriers: Courier[];
 };
 
 type ManualOrderForm = {
@@ -28,10 +31,17 @@ type ManualOrderForm = {
   paymentMethod: PaymentMethod;
 };
 
+type DeliveryDraft = {
+  courierId: string;
+  deliveryStatus: DeliveryStatus;
+};
+
 type SortOption = "newest" | "oldest" | "total-desc" | "total-asc";
 type OrderStatusFilter = "all" | OrderStatus;
 type PaymentStatusFilter = "all" | PaymentStatus;
 type SourceFilter = "all" | OrderSource;
+type DeliveryStatusFilter = "all" | DeliveryStatus;
+type CourierFilter = "all" | string;
 
 type LookupPayload = {
   found: boolean;
@@ -56,6 +66,13 @@ const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "cash-on-delivery", label: "Kapıda nakit" },
   { value: "card-on-delivery", label: "Kapıda kart" },
   { value: "online", label: "Online" }
+];
+
+const DELIVERY_STATUS_OPTIONS: Array<{ value: DeliveryStatus; label: string }> = [
+  { value: "unassigned", label: "Atanmadı" },
+  { value: "assigned", label: "Atandı" },
+  { value: "out-for-delivery", label: "Dağıtıma çıktı" },
+  { value: "delivered", label: "Teslim edildi" }
 ];
 
 function formatOrderTime(timestamp: string) {
@@ -125,6 +142,24 @@ function orderStatusLabel(status: string) {
   }
 }
 
+function deliveryStatusLabel(status: DeliveryStatus) {
+  return DELIVERY_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
+}
+
+function deliveryStatusClass(status: DeliveryStatus) {
+  switch (status) {
+    case "delivered":
+      return "delivery-status-delivered";
+    case "out-for-delivery":
+      return "delivery-status-out";
+    case "assigned":
+      return "delivery-status-assigned";
+    case "unassigned":
+    default:
+      return "delivery-status-unassigned";
+  }
+}
+
 function sourceLabel(source: OrderSource) {
   return source === "manual" ? "Manuel" : "QR";
 }
@@ -158,13 +193,27 @@ function getActionOptions(status: OrderStatus) {
   }
 }
 
-export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }: Props) {
+function getInitialDeliveryDraft(order: Order): DeliveryDraft {
+  return {
+    courierId: order.courier?.id ?? "",
+    deliveryStatus: order.deliveryStatus
+  };
+}
+
+export function OrdersManager({
+  dealerSlug,
+  initialOrders,
+  products,
+  campaigns,
+  couriers
+}: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [manualForm, setManualForm] = useState<ManualOrderForm>(EMPTY_MANUAL_FORM);
   const [manualQuantities, setManualQuantities] = useState<Record<string, number>>({});
+  const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, DeliveryDraft>>({});
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
@@ -173,6 +222,8 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<DeliveryStatusFilter>("all");
+  const [courierFilter, setCourierFilter] = useState<CourierFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
 
   const selectedManualItems = useMemo(
@@ -226,6 +277,14 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
           return false;
         }
 
+        if (deliveryStatusFilter !== "all" && order.deliveryStatus !== deliveryStatusFilter) {
+          return false;
+        }
+
+        if (courierFilter !== "all" && order.courier?.id !== courierFilter) {
+          return false;
+        }
+
         return true;
       })
       .sort((first, second) => {
@@ -241,13 +300,42 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
             return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
         }
       });
-  }, [orders, paymentStatusFilter, searchTerm, sortOption, sourceFilter, statusFilter]);
+  }, [
+    courierFilter,
+    deliveryStatusFilter,
+    orders,
+    paymentStatusFilter,
+    searchTerm,
+    sortOption,
+    sourceFilter,
+    statusFilter
+  ]);
 
   function updateManualQuantity(productId: string, value: number) {
     setManualQuantities((current) => ({
       ...current,
       [productId]: Math.max(0, Math.floor(value))
     }));
+  }
+
+  function getDeliveryDraft(order: Order) {
+    return deliveryDrafts[order.id] ?? getInitialDeliveryDraft(order);
+  }
+
+  function setDeliveryDraft(order: Order, patch: Partial<DeliveryDraft>) {
+    setDeliveryDrafts((current) => {
+      const existing = current[order.id] ?? getInitialDeliveryDraft(order);
+      const next = { ...existing, ...patch };
+
+      if (!next.courierId) {
+        next.deliveryStatus = "unassigned";
+      }
+
+      return {
+        ...current,
+        [order.id]: next
+      };
+    });
   }
 
   async function handleCustomerLookup() {
@@ -386,20 +474,62 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
     }
   }
 
+  async function handleDeliverySave(order: Order) {
+    const draft = getDeliveryDraft(order);
+
+    setActiveOrderId(order.id);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/dealers/${dealerSlug}/orders/${order.id}/delivery`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          courierId: draft.courierId || null,
+          deliveryStatus: draft.courierId ? draft.deliveryStatus : "unassigned"
+        })
+      });
+
+      const payload = (await response.json()) as { order?: Order; error?: string };
+
+      if (!response.ok || !payload.order) {
+        throw new Error(payload.error ?? "Teslimat bilgisi güncellenemedi");
+      }
+
+      setOrders((current) =>
+        current.map((currentOrder) =>
+          currentOrder.id === payload.order?.id ? payload.order : currentOrder
+        )
+      );
+      setDeliveryDrafts((current) => {
+        const next = { ...current };
+        delete next[order.id];
+        return next;
+      });
+      setMessage("Kurye ataması güncellendi.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Teslimat bilgisi güncellenemedi");
+    } finally {
+      setActiveOrderId(null);
+    }
+  }
+
   return (
     <section className="panel stack">
       <div className="admin-console-head">
         <div>
           <span className="kicker">Sipariş ekranı</span>
           <h2>Sipariş listesi</h2>
-          <p className="caption">Siparişleri arayın, süzün ve yeni sipariş ekleyin.</p>
+          <p className="caption">Siparişleri arayın, süzün, kurye atayın ve yeni sipariş ekleyin.</p>
         </div>
         <button type="button" className="button" onClick={() => setIsCreateOpen((current) => !current)}>
           {isCreateOpen ? "Formu kapat" : "Yeni sipariş ekle"}
         </button>
       </div>
 
-      <div className="admin-console-toolbar">
+      <div className="admin-console-toolbar admin-console-toolbar-wide">
         <label>
           Arama
           <input
@@ -444,6 +574,34 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
             <option value="all">Tümü</option>
             <option value="qr">QR</option>
             <option value="manual">Manuel</option>
+          </select>
+        </label>
+        <label>
+          Teslimat
+          <select
+            value={deliveryStatusFilter}
+            onChange={(event) => setDeliveryStatusFilter(event.target.value as DeliveryStatusFilter)}
+          >
+            <option value="all">Tümü</option>
+            {DELIVERY_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Kurye
+          <select
+            value={courierFilter}
+            onChange={(event) => setCourierFilter(event.target.value as CourierFilter)}
+          >
+            <option value="all">Tümü</option>
+            {couriers.map((courier) => (
+              <option key={courier.id} value={courier.id}>
+                {courier.fullName}
+              </option>
+            ))}
           </select>
         </label>
         <label>
@@ -659,7 +817,7 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
       ) : null}
 
       {message ? (
-        <div className={`note ${message.includes("güncellendi") ? "" : "warning"}`}>{message}</div>
+        <div className={`note ${message.includes("güncellendi") || message.includes("ataması") ? "" : "warning"}`}>{message}</div>
       ) : null}
 
       <div className="order-list-summary">
@@ -678,6 +836,13 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
             const primaryPayment = order.payments[0];
             const actionOptions = getActionOptions(order.status);
             const isUpdating = activeOrderId === order.id;
+            const deliveryDraft = getDeliveryDraft(order);
+            const deliveryChanged =
+              deliveryDraft.courierId !== (order.courier?.id ?? "") ||
+              deliveryDraft.deliveryStatus !== order.deliveryStatus;
+            const selectableCouriers = couriers.filter(
+              (courier) => courier.isActive || courier.id === order.courier?.id || courier.id === deliveryDraft.courierId
+            );
 
             return (
               <article key={order.id} className="order-card stack">
@@ -709,6 +874,13 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
                       {primaryPayment ? paymentStatusLabel(primaryPayment.status) : "Bekliyor"}
                     </span>
                   </div>
+                  <div className="detail-block">
+                    <span className="detail-label">Kurye</span>
+                    <strong>{order.courier?.fullName ?? "Atanmadı"}</strong>
+                    <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
+                      {deliveryStatusLabel(order.deliveryStatus)}
+                    </span>
+                  </div>
                   <div className="detail-block detail-block-wide">
                     <span className="detail-label">Adres</span>
                     <strong>{order.addressLine}</strong>
@@ -723,6 +895,66 @@ export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }
                       <strong>{formatCurrency(item.quantity * item.unitPriceCents)}</strong>
                     </div>
                   ))}
+                </div>
+
+                <div className="delivery-panel stack compact-stack">
+                  <div>
+                    <span className="detail-label">Teslimat yönetimi</span>
+                    <p className="caption">Kurye atayın ve teslimat durumunu güncelleyin.</p>
+                  </div>
+                  <div className="delivery-form-grid">
+                    <label>
+                      Kurye
+                      <select
+                        value={deliveryDraft.courierId}
+                        onChange={(event) =>
+                          setDeliveryDraft(order, {
+                            courierId: event.target.value,
+                            deliveryStatus: event.target.value ? (order.deliveryStatus === "unassigned" ? "assigned" : deliveryDraft.deliveryStatus) : "unassigned"
+                          })
+                        }
+                        disabled={isUpdating || selectableCouriers.length === 0}
+                      >
+                        <option value="">Kurye ata</option>
+                        {selectableCouriers.map((courier) => (
+                          <option key={courier.id} value={courier.id}>
+                            {courier.fullName}{courier.isActive ? "" : " (Pasif)"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label>
+                      Teslimat durumu
+                      <select
+                        value={deliveryDraft.courierId ? deliveryDraft.deliveryStatus : "unassigned"}
+                        onChange={(event) =>
+                          setDeliveryDraft(order, {
+                            deliveryStatus: event.target.value as DeliveryStatus
+                          })
+                        }
+                        disabled={isUpdating || !deliveryDraft.courierId}
+                      >
+                        {DELIVERY_STATUS_OPTIONS.filter(
+                          (option) => deliveryDraft.courierId || option.value === "unassigned"
+                        ).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="button-secondary admin-inline-button"
+                      onClick={() => handleDeliverySave(order)}
+                      disabled={isUpdating || (!deliveryChanged && !deliveryDraft.courierId && order.deliveryStatus === "unassigned")}
+                    >
+                      {isUpdating ? "Kaydediliyor..." : "Teslimatı kaydet"}
+                    </button>
+                  </div>
                 </div>
 
                 {order.notes ? <div className="note">{order.notes}</div> : null}

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  DeliveryStatus as PrismaDeliveryStatus,
   OrderStatus as PrismaOrderStatus,
   PaymentMethod as PrismaPaymentMethod,
   PaymentStatus as PrismaPaymentStatus
@@ -11,6 +12,8 @@ import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/ser
 import { upsertCustomerForOrder } from "@/src/server/domain/customers/service";
 import type {
   Company,
+  Courier,
+  DeliveryStatus,
   Order,
   OrderDraft,
   OrderPaymentSnapshot,
@@ -84,6 +87,22 @@ function toPaymentMethod(method: PrismaPaymentMethod): PaymentMethod {
   throw new Error(`Unsupported payment method: ${exhaustiveMethod}`);
 }
 
+function toDeliveryStatus(status: PrismaDeliveryStatus): DeliveryStatus {
+  switch (status) {
+    case PrismaDeliveryStatus.UNASSIGNED:
+      return "unassigned";
+    case PrismaDeliveryStatus.ASSIGNED:
+      return "assigned";
+    case PrismaDeliveryStatus.OUT_FOR_DELIVERY:
+      return "out-for-delivery";
+    case PrismaDeliveryStatus.DELIVERED:
+      return "delivered";
+  }
+
+  const exhaustiveStatus: never = status;
+  throw new Error(`Unsupported delivery status: ${exhaustiveStatus}`);
+}
+
 function toPrismaPaymentMethod(method: PaymentMethod): PrismaPaymentMethod {
   switch (method) {
     case "cash-on-delivery":
@@ -96,6 +115,22 @@ function toPrismaPaymentMethod(method: PaymentMethod): PrismaPaymentMethod {
 
   const exhaustiveMethod: never = method;
   throw new Error(`Unsupported payment method: ${exhaustiveMethod}`);
+}
+
+function toPrismaDeliveryStatus(status: DeliveryStatus): PrismaDeliveryStatus {
+  switch (status) {
+    case "unassigned":
+      return PrismaDeliveryStatus.UNASSIGNED;
+    case "assigned":
+      return PrismaDeliveryStatus.ASSIGNED;
+    case "out-for-delivery":
+      return PrismaDeliveryStatus.OUT_FOR_DELIVERY;
+    case "delivered":
+      return PrismaDeliveryStatus.DELIVERED;
+  }
+
+  const exhaustiveStatus: never = status;
+  throw new Error(`Unsupported delivery status: ${exhaustiveStatus}`);
 }
 
 function toPrismaOrderStatus(status: OrderStatus): PrismaOrderStatus {
@@ -122,15 +157,47 @@ function toOrderSource(source: string): OrderSource {
   return source === "manual" ? "manual" : "qr";
 }
 
+function toCourier(courier: {
+  id: string;
+  companyId: string;
+  fullName: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: Date;
+} | null): Courier | null {
+  if (!courier) {
+    return null;
+  }
+
+  return {
+    id: courier.id,
+    companyId: courier.companyId,
+    fullName: courier.fullName,
+    phone: courier.phone,
+    isActive: courier.isActive,
+    createdAt: courier.createdAt.toISOString()
+  };
+}
+
 function toOrder(order: {
   id: string;
   companyId: string;
   customerId: string | null;
+  courierId: string | null;
+  courier: {
+    id: string;
+    companyId: string;
+    fullName: string;
+    phone: string;
+    isActive: boolean;
+    createdAt: Date;
+  } | null;
   customerName: string;
   phone: string;
   addressLine: string;
   deliveryNotes: string | null;
   status: PrismaOrderStatus;
+  deliveryStatus: PrismaDeliveryStatus;
   source: string;
   submittedAt: Date;
   orderItems: Array<{
@@ -152,11 +219,13 @@ function toOrder(order: {
     id: order.id,
     companyId: order.companyId,
     customerId: order.customerId,
+    courier: toCourier(order.courier),
     customerName: order.customerName,
     phone: order.phone,
     addressLine: order.addressLine,
     status: toOrderStatus(order.status),
     source: toOrderSource(order.source),
+    deliveryStatus: toDeliveryStatus(order.deliveryStatus),
     createdAt: order.submittedAt.toISOString(),
     notes: order.deliveryNotes,
     items: order.orderItems.map((item) => ({
@@ -228,6 +297,7 @@ export async function listOrdersForCompany(companyId: string) {
       companyId
     },
     include: {
+      courier: true,
       orderItems: {
         orderBy: {
           createdAt: "asc"
@@ -263,6 +333,7 @@ export async function updateOrderStatusForCompany(
       companyId
     },
     include: {
+      courier: true,
       orderItems: {
         orderBy: {
           createdAt: "asc"
@@ -295,6 +366,87 @@ export async function updateOrderStatusForCompany(
       status: toPrismaOrderStatus(nextStatus)
     },
     include: {
+      courier: true,
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    }
+  });
+
+  return toOrder(updatedOrder);
+}
+
+export async function updateOrderDeliveryForCompany(
+  companyId: string,
+  orderId: string,
+  input: {
+    courierId: string | null;
+    deliveryStatus: DeliveryStatus;
+  }
+) {
+  const existingOrder = await db.order.findFirst({
+    where: {
+      id: orderId,
+      companyId
+    },
+    include: {
+      courier: true,
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    }
+  });
+
+  if (!existingOrder) {
+    throw new Error("Sipariş bulunamadı");
+  }
+
+  if (!input.courierId && input.deliveryStatus !== "unassigned") {
+    throw new Error("Kurye seçilmeden teslimat durumu ilerletilemez");
+  }
+
+  if (input.courierId) {
+    const courier = await db.courier.findFirst({
+      where: {
+        id: input.courierId,
+        companyId
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!courier) {
+      throw new Error("Kurye bulunamadı");
+    }
+  }
+
+  const updatedOrder = await db.order.update({
+    where: {
+      id: existingOrder.id
+    },
+    data: {
+      courierId: input.courierId,
+      deliveryStatus: toPrismaDeliveryStatus(
+        input.courierId ? input.deliveryStatus : "unassigned"
+      )
+    },
+    include: {
+      courier: true,
       orderItems: {
         orderBy: {
           createdAt: "asc"
@@ -383,6 +535,7 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         addressLine,
         deliveryNotes: draft.notes?.trim() || null,
         status: PrismaOrderStatus.PENDING,
+        deliveryStatus: PrismaDeliveryStatus.UNASSIGNED,
         source: draft.source ?? "qr",
         orderItems: {
           create: orderItems.map((item) => ({
@@ -406,6 +559,7 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         }
       },
       include: {
+        courier: true,
         orderItems: {
           orderBy: {
             createdAt: "asc"
@@ -430,6 +584,7 @@ export async function getOrderPaymentSnapshot(orderId: string) {
     },
     include: {
       company: true,
+      courier: true,
       orderItems: {
         orderBy: {
           createdAt: "asc"
@@ -488,6 +643,7 @@ export async function updateOnlinePaymentResultByToken(
       order: {
         include: {
           company: true,
+          courier: true,
           orderItems: {
             orderBy: {
               createdAt: "asc"
@@ -527,6 +683,7 @@ export async function updateOnlinePaymentResultByToken(
     },
     include: {
       company: true,
+      courier: true,
       orderItems: {
         orderBy: {
           createdAt: "asc"

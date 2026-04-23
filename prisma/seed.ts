@@ -1,4 +1,5 @@
 import {
+  DeliveryStatus,
   CampaignType,
   PaymentMethod,
   PaymentStatus,
@@ -16,6 +17,7 @@ async function main() {
   await prisma.payment.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
+  await prisma.courier.deleteMany();
   await prisma.campaign.deleteMany();
   await prisma.customerAddress.deleteMany();
   await prisma.customer.deleteMany();
@@ -69,6 +71,32 @@ async function main() {
         fullName: "Marmara Yetkili",
         phone: "05550000001",
         normalizedPhone: normalizePhone("05550000001"),
+        isActive: true
+      }
+    ]
+  });
+
+  await prisma.courier.createMany({
+    data: [
+      {
+        id: "courier_javsu_1",
+        companyId: "company_javsu",
+        fullName: "Ali Yildiz",
+        phone: "05551112233",
+        isActive: true
+      },
+      {
+        id: "courier_javsu_2",
+        companyId: "company_javsu",
+        fullName: "Ece Kurt",
+        phone: "05554443322",
+        isActive: true
+      },
+      {
+        id: "courier_marmara_1",
+        companyId: "company_marmara",
+        fullName: "Can Demir",
+        phone: "05556667788",
         isActive: true
       }
     ]
@@ -224,6 +252,8 @@ async function main() {
       addressLine: "Ataturk Mah. Cicek Sok. No:12 D:4, Umraniye / Istanbul",
       deliveryNotes: "Ring once.",
       status: OrderStatus.PENDING,
+      courierId: "courier_javsu_1",
+      deliveryStatus: DeliveryStatus.ASSIGNED,
       source: "qr",
       submittedAt: new Date("2026-04-13T10:15:00.000Z"),
       createdAt: new Date("2026-04-13T10:15:00.000Z"),
@@ -262,6 +292,7 @@ async function main() {
       normalizedPhone: normalizePhone("05339887766"),
       addressLine: "Nisbetiye Cad. No:48 Kat:3, Besiktas / Istanbul",
       status: OrderStatus.CONFIRMED,
+      deliveryStatus: DeliveryStatus.UNASSIGNED,
       source: "qr",
       submittedAt: new Date("2026-04-13T09:25:00.000Z"),
       createdAt: new Date("2026-04-13T09:25:00.000Z"),
