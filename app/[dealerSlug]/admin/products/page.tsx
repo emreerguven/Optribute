@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getDealerBrandStyle } from "@/src/lib/branding";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listAdminProductsForCompany } from "@/src/server/domain/products/service";
 import { BrandingForm } from "./branding-form";
@@ -20,9 +21,10 @@ export default async function DealerProductsAdminPage({
   }
 
   const products = await listAdminProductsForCompany(dealer.id);
+  const brandStyle = getDealerBrandStyle(dealer.primaryColor);
 
   return (
-    <main className="shell admin-shell stack">
+    <main className="shell admin-shell stack" style={brandStyle}>
       <section className="hero hero-compact stack">
         <div className="hero-grid">
           <div>

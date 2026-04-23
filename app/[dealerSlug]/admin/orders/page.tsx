@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatCurrency } from "@/src/lib/currency";
+import { getDealerBrandStyle } from "@/src/lib/branding";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listOrdersForCompany } from "@/src/server/domain/orders/service";
 import { OrdersManager } from "./orders-manager";
@@ -28,9 +29,10 @@ export default async function DealerOrdersAdminPage({
       sum + order.items.reduce((orderSum, item) => orderSum + item.quantity * item.unitPriceCents, 0),
     0
   );
+  const brandStyle = getDealerBrandStyle(dealer.primaryColor);
 
   return (
-    <main className="shell admin-shell stack">
+    <main className="shell admin-shell stack" style={brandStyle}>
       <section className="hero hero-compact stack">
         <div className="hero-grid">
           <div>

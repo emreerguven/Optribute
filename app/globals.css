@@ -73,6 +73,52 @@ main {
   width: min(calc(100% - 1rem), 1080px);
 }
 
+.admin-shell .hero {
+  border-color: var(--color-primary-border);
+}
+
+.admin-shell .panel,
+.admin-shell .order-card,
+.admin-shell .metric {
+  border-color: var(--card-border);
+}
+
+.admin-shell .metric {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72)),
+    var(--color-primary-softer);
+}
+
+.admin-shell .metric::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  content: "";
+  background: var(--color-primary);
+}
+
+.admin-shell .metric-value {
+  color: var(--color-primary-strong);
+}
+
+.admin-shell .detail-block,
+.admin-shell .summary-card {
+  border-color: var(--card-border);
+}
+
+.admin-shell .detail-label {
+  color: var(--color-primary-strong);
+}
+
+.admin-shell .order-card:has(form) {
+  border-color: var(--color-primary-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72)),
+    var(--color-primary-softer);
+}
+
 .hero,
 .panel,
 .card,
