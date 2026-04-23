@@ -18,6 +18,13 @@ type PaymentDistributionRow<T extends string> = {
   count: number;
 };
 
+export type DashboardTrendPoint = {
+  dateKey: string;
+  shortLabel: string;
+  ordersCount: number;
+  revenueCents: number;
+};
+
 type CourierWorkload = {
   courier: Courier;
   activeOrdersCount: number;
@@ -35,6 +42,7 @@ export type DealerDashboardSnapshot = {
   paymentMethodDistribution: PaymentDistributionRow<PaymentMethod>[];
   paymentStatusDistribution: PaymentDistributionRow<PaymentStatus>[];
   courierWorkloads: CourierWorkload[];
+  trend: DashboardTrendPoint[];
   recentOrders: Order[];
 };
 
@@ -59,6 +67,14 @@ function formatTodayLabel(date: Date, timeZone: string) {
   }).format(date);
 }
 
+function formatShortLabel(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("tr-TR", {
+    timeZone,
+    day: "numeric",
+    month: "short"
+  }).format(date);
+}
+
 function toSortedDistribution<T extends string>(map: Map<T, number>) {
   return [...map.entries()]
     .map(([key, count]) => ({ key, count }))
@@ -73,6 +89,10 @@ function countCourierStatuses(orders: Order[], courierId: string, status: Delive
   return orders.filter((order) => order.courier?.id === courierId && order.deliveryStatus === status).length;
 }
 
+function isPositiveProductItem(item: Order["items"][number]) {
+  return Boolean(item.productId) && item.unitPriceCents > 0;
+}
+
 export async function getDealerDashboardSnapshot(
   companyId: string,
   options?: { timeZone?: string }
@@ -85,6 +105,18 @@ export async function getDealerDashboardSnapshot(
 
   const now = new Date();
   const todayKey = getDateKey(now, timeZone);
+  const trend = Array.from({ length: 30 }, (_, index) => {
+    const date = new Date(now.getTime() - (29 - index) * 24 * 60 * 60 * 1000);
+    const dateKey = getDateKey(date, timeZone);
+
+    return {
+      dateKey,
+      shortLabel: formatShortLabel(date, timeZone),
+      ordersCount: 0,
+      revenueCents: 0
+    };
+  });
+  const trendMap = new Map(trend.map((entry) => [entry.dateKey, entry]));
   const todayOrders = orders.filter((order) => getDateKey(new Date(order.createdAt), timeZone) === todayKey);
 
   const todayRevenueCents = todayOrders.reduce((sum, order) => sum + getOrderTotal(order), 0);
@@ -97,6 +129,10 @@ export async function getDealerDashboardSnapshot(
 
   for (const order of todayOrders) {
     for (const item of order.items) {
+      if (!isPositiveProductItem(item)) {
+        continue;
+      }
+
       const nextQuantity = (productQuantities.get(item.name) ?? 0) + item.quantity;
       productQuantities.set(item.name, nextQuantity);
     }
@@ -119,6 +155,18 @@ export async function getDealerDashboardSnapshot(
 
     paymentMethodCounts.set(payment.method, (paymentMethodCounts.get(payment.method) ?? 0) + 1);
     paymentStatusCounts.set(payment.status, (paymentStatusCounts.get(payment.status) ?? 0) + 1);
+  }
+
+  for (const order of orders) {
+    const dateKey = getDateKey(new Date(order.createdAt), timeZone);
+    const trendEntry = trendMap.get(dateKey);
+
+    if (!trendEntry) {
+      continue;
+    }
+
+    trendEntry.ordersCount += 1;
+    trendEntry.revenueCents += getOrderTotal(order);
   }
 
   const courierWorkloads = couriers
@@ -152,6 +200,7 @@ export async function getDealerDashboardSnapshot(
     paymentMethodDistribution: toSortedDistribution(paymentMethodCounts),
     paymentStatusDistribution: toSortedDistribution(paymentStatusCounts),
     courierWorkloads,
+    trend,
     recentOrders: orders.slice(0, 8)
   };
 }

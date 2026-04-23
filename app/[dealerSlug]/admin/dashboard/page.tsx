@@ -4,9 +4,12 @@ import { getDealerBrandStyle } from "@/src/lib/branding";
 import { formatCurrency } from "@/src/lib/currency";
 import { requireAdminPage } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
-import { getDealerDashboardSnapshot } from "@/src/server/domain/dashboard/service";
+import {
+  getDealerDashboardSnapshot,
+} from "@/src/server/domain/dashboard/service";
 import type { DeliveryStatus, OrderStatus, PaymentMethod, PaymentStatus } from "@/src/server/domain/types";
 import { LogoutButton } from "../logout-button";
+import { TrendChartCard } from "./trend-chart-card";
 
 export const dynamic = "force-dynamic";
 
@@ -175,6 +178,20 @@ export default async function DealerDashboardPage({
       </section>
 
       <section className="dashboard-grid">
+        <article className="panel stack dashboard-card dashboard-card-wide">
+          <div className="dashboard-card-head">
+            <div>
+              <span className="kicker">Son 30 gün</span>
+              <h2>Trend görünümü</h2>
+            </div>
+            <span className="caption">Sipariş ve ciro akışını günlük olarak izleyin.</span>
+          </div>
+          <div className="dashboard-trend-grid">
+            <TrendChartCard title="Sipariş sayısı" series={snapshot.trend} mode="orders" />
+            <TrendChartCard title="Ciro" series={snapshot.trend} mode="revenue" />
+          </div>
+        </article>
+
         <article className="panel stack dashboard-card">
           <div className="dashboard-card-head">
             <div>
