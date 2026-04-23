@@ -15,6 +15,7 @@ export function LoginForm({ dealerSlug, authMode }: Props) {
   const [step, setStep] = useState<LoginStep>("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [activeAuthMode, setActiveAuthMode] = useState<"demo" | "sms">(authMode);
   const [message, setMessage] = useState<string | null>(null);
   const [demoCode, setDemoCode] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +45,7 @@ export function LoginForm({ dealerSlug, authMode }: Props) {
         throw new Error(payload.error ?? "Kod gönderilemedi");
       }
 
+      setActiveAuthMode(payload.authMode ?? authMode);
       setDemoCode(payload.demoCode ?? null);
       setStep("code");
       setMessage(
@@ -127,7 +129,7 @@ export function LoginForm({ dealerSlug, authMode }: Props) {
               disabled={isSubmitting}
             />
           </label>
-          {authMode === "demo" && demoCode ? (
+          {activeAuthMode === "demo" && demoCode ? (
             <div className="demo-code-card stack compact-stack">
               <div>
                 <strong>Demo doğrulama kodu</strong>
@@ -153,6 +155,7 @@ export function LoginForm({ dealerSlug, authMode }: Props) {
               onClick={() => {
                 setStep("phone");
                 setCode("");
+                setActiveAuthMode(authMode);
                 setMessage(null);
                 setDemoCode(null);
               }}
