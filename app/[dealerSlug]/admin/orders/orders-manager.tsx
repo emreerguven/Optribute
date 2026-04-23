@@ -226,6 +226,7 @@ export function OrdersManager({
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>([]);
   const [manualForm, setManualForm] = useState<ManualOrderForm>(EMPTY_MANUAL_FORM);
   const [manualQuantities, setManualQuantities] = useState<Record<string, number>>({});
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, DeliveryDraft>>({});
@@ -359,6 +360,14 @@ export function OrdersManager({
         [order.id]: next
       };
     });
+  }
+
+  function toggleOrderExpanded(orderId: string) {
+    setExpandedOrderIds((current) =>
+      current.includes(orderId)
+        ? current.filter((id) => id !== orderId)
+        : [...current, orderId]
+    );
   }
 
   async function handleCustomerLookup() {
@@ -553,18 +562,19 @@ export function OrdersManager({
 
   return (
     <section className="panel stack">
+      <div className="admin-console-shell stack">
       <div className="admin-console-head">
         <div>
           <span className="kicker">Sipariş ekranı</span>
           <h2>Sipariş listesi</h2>
-          <p className="caption">Siparişleri arayın, süzün, kurye atayın ve yeni sipariş ekleyin.</p>
+          <p className="caption">Arayın, süzün ve teslimat akışını yönetin.</p>
         </div>
         <button type="button" className="button" onClick={() => setIsCreateOpen((current) => !current)}>
-          {isCreateOpen ? "Formu kapat" : "Yeni sipariş ekle"}
+          {isCreateOpen ? "Yeni sipariş panelini kapat" : "Yeni sipariş ekle"}
         </button>
       </div>
 
-      <div className="admin-console-toolbar admin-console-toolbar-wide">
+      <div className="admin-console-toolbar admin-console-toolbar-wide admin-console-toolbar-sticky">
         <label>
           Arama
           <input
@@ -648,6 +658,7 @@ export function OrdersManager({
             <option value="total-asc">Tutar düşükten yükseğe</option>
           </select>
         </label>
+      </div>
       </div>
 
       {isCreateOpen ? (
@@ -998,6 +1009,7 @@ export function OrdersManager({
             const primaryPayment = order.payments[0];
             const actionOptions = getActionOptions(order.status);
             const isUpdating = activeOrderId === order.id;
+            const isExpanded = expandedOrderIds.includes(order.id);
             const deliveryDraft = getDeliveryDraft(order);
             const deliveryChanged =
               deliveryDraft.courierId !== (order.courier?.id ?? "") ||
@@ -1008,19 +1020,50 @@ export function OrdersManager({
 
             return (
               <article key={order.id} className="order-card stack">
-                <div className="order-topline">
-                  <div>
-                    <span className="caption">Geliş zamanı</span>
-                    <h3>{formatOrderTime(order.createdAt)}</h3>
+                <div className="order-summary-compact">
+                  <div className="order-summary-main">
+                    <div>
+                      <span className="detail-label">Müşteri</span>
+                      <h3>{order.customerName}</h3>
+                      <p className="caption">{order.phone}</p>
+                    </div>
+                    <div className="order-summary-meta">
+                      <div className="compact-meta-item">
+                        <span className="detail-label">Tutar</span>
+                        <strong>{formatCurrency(total)}</strong>
+                      </div>
+                      <div className="compact-meta-item">
+                        <span className="detail-label">Zaman</span>
+                        <strong>{formatOrderTime(order.createdAt)}</strong>
+                      </div>
+                    </div>
                   </div>
-                  <div className="order-badge-row">
+                  <div className="order-summary-tags">
                     <span className="status">{orderStatusLabel(order.status)}</span>
                     <span className={`source-badge source-badge-${order.source}`}>
                       {sourceLabel(order.source)}
                     </span>
+                    <span className={`payment-status ${primaryPayment ? paymentStatusClass(primaryPayment.status) : "payment-status-pending"}`}>
+                      {primaryPayment ? `${paymentMethodLabel(primaryPayment.method)} • ${paymentStatusLabel(primaryPayment.status)}` : "Ödeme bekliyor"}
+                    </span>
+                    <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
+                      {deliveryStatusLabel(order.deliveryStatus)}
+                    </span>
+                    <span className="pill">{order.courier?.fullName ?? "Kurye yok"}</span>
+                  </div>
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="button-secondary admin-inline-button"
+                      onClick={() => toggleOrderExpanded(order.id)}
+                    >
+                      {isExpanded ? "Detayları gizle" : "Detayları aç"}
+                    </button>
                   </div>
                 </div>
 
+                {isExpanded ? (
+                <>
                 <div className="admin-detail-grid">
                   <div className="detail-block">
                     <span className="detail-label">Müşteri</span>
@@ -1057,8 +1100,8 @@ export function OrdersManager({
                         {order.deliveryAddress.addressNote ? (
                           <span className="caption">{order.deliveryAddress.addressNote}</span>
                         ) : null}
-                      </div>
-                    </div>
+                  </div>
+                </div>
 
                 <div className="summary-card stack compact-stack">
                   <div className="detail-label">Ürün özeti</div>
@@ -1149,6 +1192,8 @@ export function OrdersManager({
                 ) : (
                   <div className="caption">Bu sipariş için ek durum işlemi yok.</div>
                 )}
+                </>
+                ) : null}
 
                 <div className="summary-row total-row">
                   <span>Toplam</span>

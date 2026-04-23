@@ -230,6 +230,13 @@ main {
   gap: 1rem;
 }
 
+.admin-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .stats-grid,
 .product-grid,
 .orders-grid,
@@ -1042,10 +1049,27 @@ textarea {
   gap: 1rem;
 }
 
+.admin-console-shell {
+  gap: 0.85rem;
+}
+
 .admin-console-toolbar,
 .manual-customer-grid {
   display: grid;
   gap: 0.85rem;
+}
+
+.admin-console-toolbar-sticky {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 10;
+  padding: 0.85rem;
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.82)),
+    var(--color-primary-softer);
+  border: 1px solid var(--color-primary-border);
+  box-shadow: 0 12px 24px rgba(17, 35, 31, 0.07);
 }
 
 .admin-console-toolbar-wide {
@@ -1232,6 +1256,40 @@ textarea {
   gap: 0.85rem;
 }
 
+.order-summary-compact {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.order-summary-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.order-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.compact-meta-item {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 132px;
+  padding: 0.65rem 0.8rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(17, 35, 31, 0.08);
+}
+
+.order-summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 .route-stop-list {
   display: grid;
   gap: 1rem;
@@ -1293,6 +1351,10 @@ textarea {
   }
 
   .admin-console-head {
+    flex-direction: column;
+  }
+
+  .admin-section-header {
     flex-direction: column;
   }
 
@@ -1436,6 +1498,15 @@ textarea {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .order-summary-main {
+    flex-direction: column;
+  }
+
+  .order-summary-meta {
+    width: 100%;
+    flex-direction: column;
+  }
 }
 
 @media (min-width: 721px) {
@@ -1469,6 +1540,11 @@ textarea {
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
+  .product-admin-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
   .manual-customer-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1483,5 +1559,13 @@ textarea {
 
   .structured-address-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-order-list {
+    gap: 0.85rem;
+  }
+
+  .admin-order-list .order-card {
+    padding: 0.9rem 1rem;
   }
 }

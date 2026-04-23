@@ -266,6 +266,7 @@ function CampaignFormFields({
 
 export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Props) {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState<CampaignFormState>(() => createEmptyForm(products));
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [editingForm, setEditingForm] = useState<CampaignFormState>(() => createEmptyForm(products));
@@ -411,12 +412,22 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
   return (
     <div className="stack">
       <section className="panel stack">
-        <div>
-          <span className="kicker">Yeni kampanya</span>
-          <h2>Kampanya oluştur</h2>
-          <p className="caption">Uygun siparişlerde otomatik uygulanır.</p>
+        <div className="admin-section-header">
+          <div>
+            <span className="kicker">Yeni kampanya</span>
+            <h2>Kampanya oluştur</h2>
+            <p className="caption">Uygun siparişlerde otomatik uygulanır.</p>
+          </div>
+          <button
+            type="button"
+            className="button-secondary admin-inline-button"
+            onClick={() => setIsCreateOpen((current) => !current)}
+          >
+            {isCreateOpen ? "Paneli kapat" : "Yeni kampanya oluştur"}
+          </button>
         </div>
 
+        {isCreateOpen ? (
         <form className="stack" onSubmit={handleCreateCampaign}>
           <CampaignFormFields
             form={form}
@@ -435,6 +446,7 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
             {isCreating ? "Kaydediliyor..." : "Kampanyayı kaydet"}
           </button>
         </form>
+        ) : null}
       </section>
 
       <section className="panel stack">

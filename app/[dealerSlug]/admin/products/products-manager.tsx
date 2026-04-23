@@ -136,6 +136,7 @@ function ProductFormFields({
 
 export function ProductsManager({ dealerSlug, initialProducts }: Props) {
   const [products, setProducts] = useState(initialProducts);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProductForm, setNewProductForm] = useState<ProductFormState>(createEmptyForm());
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editingForm, setEditingForm] = useState<ProductFormState>(createEmptyForm());
@@ -241,14 +242,24 @@ export function ProductsManager({ dealerSlug, initialProducts }: Props) {
   return (
     <div className="stack">
       <section className="panel stack">
-        <div>
-          <span className="kicker">Yeni ürün ekle</span>
-          <h2>Ürün oluştur</h2>
-          <p className="caption">
-            Temel ürün bilgilerini girin. Silme yerine ürünü pasif yapabilirsiniz.
-          </p>
+        <div className="admin-section-header">
+          <div>
+            <span className="kicker">Yeni ürün</span>
+            <h2>Ürün oluştur</h2>
+            <p className="caption">
+              Temel ürün bilgilerini girin. Silme yerine ürünü pasif yapabilirsiniz.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="button-secondary admin-inline-button"
+            onClick={() => setIsCreateOpen((current) => !current)}
+          >
+            {isCreateOpen ? "Paneli kapat" : "Yeni ürün ekle"}
+          </button>
         </div>
 
+        {isCreateOpen ? (
         <form className="stack" onSubmit={handleCreateProduct}>
           <ProductFormFields
             form={newProductForm}
@@ -267,6 +278,7 @@ export function ProductsManager({ dealerSlug, initialProducts }: Props) {
             {isCreating ? "Kaydediliyor..." : "Yeni ürünü kaydet"}
           </button>
         </form>
+        ) : null}
       </section>
 
       <section className="panel stack">

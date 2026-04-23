@@ -33,6 +33,7 @@ function formFromCourier(courier: Courier): CourierFormState {
 
 export function CouriersManager({ dealerSlug, initialCouriers }: Props) {
   const [couriers, setCouriers] = useState(initialCouriers);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newCourierForm, setNewCourierForm] = useState<CourierFormState>(createEmptyForm());
   const [editingCourierId, setEditingCourierId] = useState<string | null>(null);
   const [editingForm, setEditingForm] = useState<CourierFormState>(createEmptyForm());
@@ -129,12 +130,22 @@ export function CouriersManager({ dealerSlug, initialCouriers }: Props) {
   return (
     <div className="stack">
       <section className="panel stack">
-        <div>
-          <span className="kicker">Yeni kurye ekle</span>
-          <h2>Kurye oluştur</h2>
-          <p className="caption">Kurye adı ve telefonunu ekleyin. Silme yerine pasif yapabilirsiniz.</p>
+        <div className="admin-section-header">
+          <div>
+            <span className="kicker">Yeni kurye</span>
+            <h2>Kurye oluştur</h2>
+            <p className="caption">Kurye adı ve telefonunu ekleyin. Silme yerine pasif yapabilirsiniz.</p>
+          </div>
+          <button
+            type="button"
+            className="button-secondary admin-inline-button"
+            onClick={() => setIsCreateOpen((current) => !current)}
+          >
+            {isCreateOpen ? "Paneli kapat" : "Yeni kurye ekle"}
+          </button>
         </div>
 
+        {isCreateOpen ? (
         <form className="stack" onSubmit={handleCreateCourier}>
           <div className="product-form-grid">
             <label>
@@ -184,6 +195,7 @@ export function CouriersManager({ dealerSlug, initialCouriers }: Props) {
             {isCreating ? "Kaydediliyor..." : "Yeni kuryeyi kaydet"}
           </button>
         </form>
+        ) : null}
       </section>
 
       <section className="panel stack">

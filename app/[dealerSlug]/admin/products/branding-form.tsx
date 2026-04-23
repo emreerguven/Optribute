@@ -42,6 +42,7 @@ export function BrandingForm({
   const [depotAddress, setDepotAddress] = useState(initialDepotAddress);
   const [primaryColor, setPrimaryColor] = useState(initialPrimaryColor || COLOR_PRESETS[0]);
   const [leadTimeMinutes, setLeadTimeMinutes] = useState(String(initialLeadTimeMinutes));
+  const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -93,14 +94,24 @@ export function BrandingForm({
 
   return (
     <section className="panel stack">
-      <div>
-        <span className="kicker">Bayi görünümü</span>
-        <h2>Marka bilgileri</h2>
-        <p className="caption">
-          Logo ve ana renk, müşterinin sipariş ekranında görünür.
-        </p>
+      <div className="admin-section-header">
+        <div>
+          <span className="kicker">Bayi görünümü</span>
+          <h2>Marka bilgileri</h2>
+          <p className="caption">
+            Logo, renk ve depo konumu sipariş ve teslimat ekranlarında görünür.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="button-secondary admin-inline-button"
+          onClick={() => setIsOpen((current) => !current)}
+        >
+          {isOpen ? "Marka bilgilerini kapat" : "Marka bilgilerini aç"}
+        </button>
       </div>
 
+      {isOpen ? (
       <form className="stack" onSubmit={handleSubmit}>
         <div className="product-form-grid">
           <label className="product-form-wide">
@@ -220,6 +231,7 @@ export function BrandingForm({
           {isSaving ? "Kaydediliyor..." : "Marka bilgilerini kaydet"}
         </button>
       </form>
+      ) : null}
     </section>
   );
 }
