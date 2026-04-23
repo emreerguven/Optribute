@@ -35,6 +35,9 @@ export default async function DealerCouriersAdminPage({
             <h1>Kuryeler</h1>
             <p className="lead">Kuryeleri ekleyin, aktifliğini yönetin ve sipariş atamalarına hazırlayın.</p>
             <div className="actions">
+              <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
+                Dashboard
+              </Link>
               <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
                 Siparişleri gör
               </Link>

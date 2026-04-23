@@ -36,6 +36,9 @@ export default async function DealerProductsAdminPage({
             <h1>Ürünler</h1>
             <p className="lead">Ürünleri ekleyin, düzenleyin ve aktif durumunu yönetin.</p>
             <div className="actions">
+              <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
+                Dashboard
+              </Link>
               <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
                 Siparişleri gör
               </Link>

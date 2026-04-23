@@ -1070,6 +1070,14 @@ textarea {
   gap: 1rem;
 }
 
+.metric-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .admin-console-shell {
   gap: 0.85rem;
 }
@@ -1689,9 +1697,80 @@ textarea {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
-  .admin-console-toolbar-wide {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-  }
+.admin-console-toolbar-wide {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.dashboard-kpi-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-card {
+  min-height: 0;
+}
+
+.dashboard-card-wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard-card-head,
+.dashboard-list-row,
+.dashboard-inline-stats,
+.dashboard-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard-card-head,
+.dashboard-list-row,
+.dashboard-recent-row {
+  justify-content: space-between;
+}
+
+.dashboard-list,
+.dashboard-recent-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-list-row,
+.dashboard-recent-row {
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-list-row-spread {
+  align-items: flex-start;
+}
+
+.dashboard-inline-stats {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dashboard-split-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.dashboard-strong {
+  color: var(--color-primary-strong);
+  font-weight: 800;
+}
+
+.dashboard-footnote {
+  display: grid;
+  gap: 0.55rem;
+}
 
   .product-admin-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1717,6 +1796,10 @@ textarea {
   .bulk-action-bar {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
     align-items: end;
+  }
+
+  .dashboard-split-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .admin-order-list {

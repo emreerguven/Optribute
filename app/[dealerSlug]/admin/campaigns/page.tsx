@@ -39,6 +39,9 @@ export default async function DealerCampaignsAdminPage({
             <h1>Kampanyalar</h1>
             <p className="lead">Siparişlerde otomatik çalışacak kampanyaları yönetin.</p>
             <div className="actions">
+              <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
+                Dashboard
+              </Link>
               <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
                 Siparişleri gör
               </Link>
