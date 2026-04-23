@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
 import type {
+  Campaign,
   Order,
   OrderSource,
   OrderStatus,
@@ -15,6 +17,7 @@ type Props = {
   dealerSlug: string;
   initialOrders: Order[];
   products: Product[];
+  campaigns: Campaign[];
 };
 
 type ManualOrderForm = {
@@ -155,7 +158,7 @@ function getActionOptions(status: OrderStatus) {
   }
 }
 
-export function OrdersManager({ dealerSlug, initialOrders, products }: Props) {
+export function OrdersManager({ dealerSlug, initialOrders, products, campaigns }: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -183,9 +186,20 @@ export function OrdersManager({ dealerSlug, initialOrders, products }: Props) {
     [manualQuantities, products]
   );
 
-  const manualTotal = selectedManualItems.reduce(
-    (sum, entry) => sum + entry.quantity * entry.product.priceCents,
-    0
+  const manualPreviewItems = useMemo(
+    () =>
+      selectedManualItems.map((entry) => ({
+        productId: entry.product.id,
+        name: entry.product.name,
+        quantity: entry.quantity,
+        unitPriceCents: entry.product.priceCents
+      })),
+    [selectedManualItems]
+  );
+
+  const manualCampaignPreview = useMemo(
+    () => evaluateBestCampaign(campaigns, manualPreviewItems),
+    [campaigns, manualPreviewItems]
   );
 
   const visibleOrders = useMemo(() => {
@@ -574,9 +588,62 @@ export function OrdersManager({ dealerSlug, initialOrders, products }: Props) {
             )}
           </div>
 
-          <div className="summary-row total-row manual-total-row">
-            <span>Seçilen ürün tutarı</span>
-            <strong>{formatCurrency(manualTotal)}</strong>
+          <div className="manual-preview-card stack compact-stack">
+            <div>
+              <span className="detail-label">Canlı önizleme</span>
+              <p className="caption">Sipariş oluşturulduğunda tutar tekrar kontrol edilir.</p>
+            </div>
+
+            {manualPreviewItems.length === 0 ? (
+              <div className="caption">Önizleme için ürün seçin.</div>
+            ) : (
+              <>
+                {manualPreviewItems.map((item) => (
+                  <div key={item.productId} className="summary-row">
+                    <span>{item.quantity} x {item.name}</span>
+                    <strong>{formatCurrency(item.quantity * item.unitPriceCents)}</strong>
+                  </div>
+                ))}
+
+                <div className="separator" />
+
+                <div className="summary-row">
+                  <span>Ara toplam</span>
+                  <strong>{formatCurrency(manualCampaignPreview.subtotalCents)}</strong>
+                </div>
+
+                {manualCampaignPreview.appliedCampaign ? (
+                  <div className="campaign-preview-block stack compact-stack">
+                    <div>
+                      <strong>Uygulanacak kampanya: {manualCampaignPreview.appliedCampaign.name}</strong>
+                    </div>
+
+                    {manualCampaignPreview.appliedCampaign.giftItems.map((item) => (
+                      <div key={`${item.productId}_${item.name}`} className="summary-row">
+                        <span>Kampanya ürünü: {item.quantity} x {item.name}</span>
+                        <strong>{formatCurrency(item.quantity * item.unitPriceCents)}</strong>
+                      </div>
+                    ))}
+
+                    {manualCampaignPreview.appliedCampaign.discountAmountCents > 0 ? (
+                      <div className="summary-row">
+                        <span>Joker indirimi</span>
+                        <strong>
+                          -{formatCurrency(manualCampaignPreview.appliedCampaign.discountAmountCents)}
+                        </strong>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="caption">Bu seçim için kampanya yok.</div>
+                )}
+
+                <div className="summary-row total-row manual-total-row">
+                  <span>Toplam</span>
+                  <strong>{formatCurrency(manualCampaignPreview.finalTotalCents)}</strong>
+                </div>
+              </>
+            )}
           </div>
 
           {createMessage ? (

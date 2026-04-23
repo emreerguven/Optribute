@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatCurrency } from "@/src/lib/currency";
 import { getDealerBrandStyle } from "@/src/lib/branding";
+import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listOrdersForCompany } from "@/src/server/domain/orders/service";
 import { listProductsForCompany } from "@/src/server/domain/products/service";
@@ -21,9 +22,10 @@ export default async function DealerOrdersAdminPage({
     notFound();
   }
 
-  const [orders, products] = await Promise.all([
+  const [orders, products, campaigns] = await Promise.all([
     listOrdersForCompany(dealer.id),
-    listProductsForCompany(dealer.id)
+    listProductsForCompany(dealer.id),
+    listActiveCampaignsForCompany(dealer.id)
   ]);
   const pendingOrders = orders.filter(
     (order) => order.status !== "completed" && order.status !== "cancelled"
@@ -65,7 +67,12 @@ export default async function DealerOrdersAdminPage({
         </div>
       </section>
 
-      <OrdersManager dealerSlug={dealer.slug} initialOrders={orders} products={products} />
+      <OrdersManager
+        dealerSlug={dealer.slug}
+        initialOrders={orders}
+        products={products}
+        campaigns={campaigns}
+      />
     </main>
   );
 }
