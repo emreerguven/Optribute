@@ -49,6 +49,7 @@ model Company {
   city                 String?
   supportPhone         String?
   logoUrl              String?
+  heroImageUrl         String?
   primaryColor         String?
   currency             String    @default("TRY")
   orderLeadTimeMinutes Int       @default(45)

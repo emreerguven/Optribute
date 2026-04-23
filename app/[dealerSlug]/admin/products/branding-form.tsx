@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import type { CSSProperties } from "react";
+import { useRouter } from "next/navigation";
+import { getBrandStyle, isHexColor } from "@/src/lib/branding";
 import type { Company } from "@/src/server/domain/types";
 
 type Props = {
   dealerSlug: string;
   initialLogoUrl: string;
+  initialHeroImageUrl: string;
   initialPrimaryColor: string;
   initialLeadTimeMinutes: number;
 };
@@ -22,24 +24,16 @@ const COLOR_PRESETS = [
   "#7c3aed"
 ];
 
-function brandStyle(color: string): CSSProperties {
-  return {
-    "--color-primary": color,
-    "--color-primary-strong": color,
-    "--color-primary-soft": `color-mix(in srgb, ${color} 10%, white)`,
-    "--color-primary-softer": `color-mix(in srgb, ${color} 6%, white)`,
-    "--color-primary-border": `color-mix(in srgb, ${color} 38%, transparent)`,
-    "--color-primary-shadow": `color-mix(in srgb, ${color} 20%, transparent)`
-  } as CSSProperties;
-}
-
 export function BrandingForm({
   dealerSlug,
   initialLogoUrl,
+  initialHeroImageUrl,
   initialPrimaryColor,
   initialLeadTimeMinutes
 }: Props) {
+  const router = useRouter();
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
+  const [heroImageUrl, setHeroImageUrl] = useState(initialHeroImageUrl);
   const [primaryColor, setPrimaryColor] = useState(initialPrimaryColor || COLOR_PRESETS[0]);
   const [leadTimeMinutes, setLeadTimeMinutes] = useState(String(initialLeadTimeMinutes));
   const [message, setMessage] = useState<string | null>(null);
@@ -58,6 +52,7 @@ export function BrandingForm({
         },
         body: JSON.stringify({
           logoUrl,
+          heroImageUrl,
           primaryColor,
           orderLeadTimeMinutes: Number(leadTimeMinutes)
         })
@@ -70,9 +65,11 @@ export function BrandingForm({
       }
 
       setLogoUrl(payload.company.logoUrl ?? "");
+      setHeroImageUrl(payload.company.heroImageUrl ?? "");
       setPrimaryColor(payload.company.primaryColor ?? COLOR_PRESETS[0]);
       setLeadTimeMinutes(String(payload.company.orderLeadTimeMinutes));
       setMessage("Bayi görünümü güncellendi.");
+      router.refresh();
     } catch (error) {
       const fallback = error instanceof Error ? error.message : "Bayi görünümü güncellenemedi";
       setMessage(fallback);
@@ -81,8 +78,8 @@ export function BrandingForm({
     }
   }
 
-  const previewColor = /^#[0-9A-Fa-f]{6}$/.test(primaryColor) ? primaryColor : COLOR_PRESETS[0];
-  const previewStyle = brandStyle(previewColor);
+  const previewColor = isHexColor(primaryColor) ? primaryColor : COLOR_PRESETS[0];
+  const previewStyle = getBrandStyle(previewColor);
 
   return (
     <section className="panel stack">
@@ -102,6 +99,16 @@ export function BrandingForm({
               value={logoUrl}
               onChange={(event) => setLogoUrl(event.target.value)}
               placeholder="https://... veya /logo.svg"
+              disabled={isSaving}
+            />
+          </label>
+
+          <label className="product-form-wide">
+            Hero görsel URL
+            <input
+              value={heroImageUrl}
+              onChange={(event) => setHeroImageUrl(event.target.value)}
+              placeholder="https://... veya /banner.svg"
               disabled={isSaving}
             />
           </label>
@@ -163,6 +170,11 @@ export function BrandingForm({
               <strong>Online sipariş</strong>
               <em>Buton ve vurgular bu renkle görünür</em>
             </div>
+            {heroImageUrl ? (
+              <div className="branding-hero-preview">
+                <img src={heroImageUrl} alt="Hero görsel önizleme" />
+              </div>
+            ) : null}
           </div>
         </div>
 

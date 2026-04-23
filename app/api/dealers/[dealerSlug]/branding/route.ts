@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   getCompanyBySlug,
   updateCompanyBranding
 } from "@/src/server/domain/companies/service";
+import { isHexColor } from "@/src/lib/branding";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -27,10 +29,11 @@ function parseBrandingInput(body: unknown) {
   }
 
   const logoUrl = normalizeOptionalText(body.logoUrl, "Logo bağlantısı");
+  const heroImageUrl = normalizeOptionalText(body.heroImageUrl, "Hero görsel bağlantısı");
   const primaryColor = normalizeOptionalText(body.primaryColor, "Ana renk");
   const orderLeadTimeMinutes = body.orderLeadTimeMinutes;
 
-  if (primaryColor && !/^#[0-9A-Fa-f]{6}$/.test(primaryColor)) {
+  if (primaryColor && !isHexColor(primaryColor)) {
     throw new Error("Ana renk #RRGGBB formatında olmalıdır");
   }
 
@@ -45,6 +48,7 @@ function parseBrandingInput(body: unknown) {
 
   return {
     logoUrl,
+    heroImageUrl,
     primaryColor,
     orderLeadTimeMinutes
   };
@@ -72,6 +76,9 @@ export async function PATCH(
   try {
     const input = parseBrandingInput(body);
     const company = await updateCompanyBranding(dealer.id, input);
+    revalidatePath(`/${dealer.slug}/order`);
+    revalidatePath(`/${dealer.slug}/order/success`);
+    revalidatePath(`/${dealer.slug}/admin/products`);
     return NextResponse.json({ ok: true, company });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Bayi görünümü güncellenemedi";

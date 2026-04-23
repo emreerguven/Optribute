@@ -3,7 +3,6 @@
   --bg-strong: #efe8db;
   --surface: rgba(255, 255, 255, 0.8);
   --surface-strong: #ffffff;
-  --card-border: rgba(15, 118, 110, 0.12);
   --text: #11231f;
   --muted: #5f7069;
   --brand: #0f766e;
@@ -14,6 +13,7 @@
   --color-primary-softer: color-mix(in srgb, var(--color-primary) 6%, white);
   --color-primary-border: color-mix(in srgb, var(--color-primary) 38%, transparent);
   --color-primary-shadow: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --card-border: color-mix(in srgb, var(--color-primary) 14%, transparent);
   --accent: #f59e0b;
   --danger: #c2410c;
   --shadow: 0 18px 45px rgba(17, 35, 31, 0.08);
@@ -98,6 +98,31 @@ main {
 
 .order-hero h1 {
   font-size: clamp(2rem, 5vw, 3.65rem);
+}
+
+.dealer-hero-visual {
+  position: relative;
+  overflow: hidden;
+  min-height: 160px;
+  border-radius: 26px;
+  background: var(--color-primary-softer);
+  border: 1px solid var(--color-primary-border);
+  box-shadow: 0 16px 32px var(--color-primary-shadow);
+}
+
+.dealer-hero-visual::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(180deg, transparent 52%, rgba(17, 35, 31, 0.14));
+  pointer-events: none;
+}
+
+.dealer-hero-visual img {
+  display: block;
+  width: 100%;
+  height: clamp(160px, 28vw, 230px);
+  object-fit: cover;
 }
 
 .hero-grid,
@@ -538,7 +563,7 @@ textarea {
   padding: 1rem;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(15, 118, 110, 0.16);
+  border: 1px solid var(--color-primary-border);
 }
 
 .catalog-item {
@@ -836,6 +861,20 @@ textarea {
   font-style: normal;
 }
 
+.branding-hero-preview {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--color-primary-border);
+  background: var(--color-primary-softer);
+}
+
+.branding-hero-preview img {
+  display: block;
+  width: 100%;
+  max-height: 140px;
+  object-fit: cover;
+}
+
 .branding-controls {
   display: flex;
   align-items: center;
@@ -960,6 +999,15 @@ textarea {
   .order-hero {
     gap: 0.48rem;
     padding: 0.68rem;
+  }
+
+  .dealer-hero-visual {
+    min-height: 104px;
+    border-radius: 18px;
+  }
+
+  .dealer-hero-visual img {
+    height: 104px;
   }
 
   .order-hero h1 {

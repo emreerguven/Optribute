@@ -58,6 +58,7 @@ export default async function DealerProductsAdminPage({
       <BrandingForm
         dealerSlug={dealer.slug}
         initialLogoUrl={dealer.logoUrl ?? ""}
+        initialHeroImageUrl={dealer.heroImageUrl ?? ""}
         initialPrimaryColor={dealer.primaryColor ?? ""}
         initialLeadTimeMinutes={dealer.orderLeadTimeMinutes}
       />

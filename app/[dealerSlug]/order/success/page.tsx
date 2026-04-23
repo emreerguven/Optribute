@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { CSSProperties } from "react";
+import { getDealerBrandStyle } from "@/src/lib/branding";
 import { formatCurrency } from "@/src/lib/currency";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 
@@ -55,21 +55,6 @@ function paymentStatusCopy(paymentStatus: string) {
   }
 }
 
-function getBrandStyle(primaryColor: string | null): CSSProperties | undefined {
-  if (!primaryColor || !/^#[0-9A-Fa-f]{6}$/.test(primaryColor)) {
-    return undefined;
-  }
-
-  return {
-    "--color-primary": primaryColor,
-    "--color-primary-strong": primaryColor,
-    "--color-primary-soft": `color-mix(in srgb, ${primaryColor} 10%, white)`,
-    "--color-primary-softer": `color-mix(in srgb, ${primaryColor} 6%, white)`,
-    "--color-primary-border": `color-mix(in srgb, ${primaryColor} 38%, transparent)`,
-    "--color-primary-shadow": `color-mix(in srgb, ${primaryColor} 20%, transparent)`
-  } as CSSProperties;
-}
-
 function formatOrderReference(orderId: string) {
   const normalized = orderId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
@@ -103,7 +88,7 @@ export default async function OrderSuccessPage({
   const itemCount = Number(readValue(query.itemCount, "0"));
   const statusCopy = paymentStatusCopy(paymentStatus);
   const orderReference = orderId ? formatOrderReference(orderId) : "";
-  const brandStyle = getBrandStyle(dealer.primaryColor);
+  const brandStyle = getDealerBrandStyle(dealer.primaryColor);
 
   return (
     <main className="shell success-shell stack" style={brandStyle}>

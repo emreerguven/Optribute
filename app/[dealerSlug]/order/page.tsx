@@ -1,26 +1,11 @@
 import { notFound } from "next/navigation";
-import type { CSSProperties } from "react";
+import { getDealerBrandStyle } from "@/src/lib/branding";
 import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listProductsForCompany } from "@/src/server/domain/products/service";
 import { OrderForm } from "./order-form";
 
 export const dynamic = "force-dynamic";
-
-function getBrandStyle(primaryColor: string | null): CSSProperties | undefined {
-  if (!primaryColor || !/^#[0-9A-Fa-f]{6}$/.test(primaryColor)) {
-    return undefined;
-  }
-
-  return {
-    "--color-primary": primaryColor,
-    "--color-primary-strong": primaryColor,
-    "--color-primary-soft": `color-mix(in srgb, ${primaryColor} 10%, white)`,
-    "--color-primary-softer": `color-mix(in srgb, ${primaryColor} 6%, white)`,
-    "--color-primary-border": `color-mix(in srgb, ${primaryColor} 38%, transparent)`,
-    "--color-primary-shadow": `color-mix(in srgb, ${primaryColor} 20%, transparent)`
-  } as CSSProperties;
-}
 
 function getBranchTitle(dealer: { slug: string; name: string }) {
   if (dealer.slug === "javsu") {
@@ -47,19 +32,24 @@ export default async function DealerOrderPage({
     listActiveCampaignsForCompany(dealer.id)
   ]);
 
-  const brandStyle = getBrandStyle(dealer.primaryColor);
+  const brandStyle = getDealerBrandStyle(dealer.primaryColor);
   const branchTitle = getBranchTitle(dealer);
 
   return (
     <main className="shell order-shell stack" style={brandStyle}>
       <section className="hero hero-compact order-hero stack">
+        {dealer.heroImageUrl ? (
+          <div className="dealer-hero-visual">
+            <img src={dealer.heroImageUrl} alt={`${dealer.name} hero görseli`} />
+          </div>
+        ) : null}
         <div className="inline-meta">
           <span className="kicker">Online sipariş</span>
           <span className="pill">{dealer.city ?? "Su teslimatı"}</span>
         </div>
         <div className="stack compact-copy">
           <div className="dealer-brand-row">
-            {dealer.logoUrl ? (
+            {!dealer.heroImageUrl && dealer.logoUrl ? (
               <img src={dealer.logoUrl} alt={`${dealer.name} logosu`} className="dealer-logo" />
             ) : null}
             <div>
