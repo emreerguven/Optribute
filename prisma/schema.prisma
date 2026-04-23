@@ -60,6 +60,38 @@ model Company {
   customers            Customer[]
   orders               Order[]
   campaigns            Campaign[]
+  adminUsers           AdminUser[]
+  adminLoginCodes      AdminLoginCode[]
+}
+
+model AdminUser {
+  id              String   @id
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fullName        String
+  phone           String
+  normalizedPhone String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([companyId, normalizedPhone])
+  @@index([companyId, isActive])
+}
+
+model AdminLoginCode {
+  id              String    @id
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  phone           String
+  normalizedPhone String
+  codeHash        String
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([companyId, normalizedPhone, expiresAt])
+  @@index([companyId, consumedAt])
 }
 
 model Product {

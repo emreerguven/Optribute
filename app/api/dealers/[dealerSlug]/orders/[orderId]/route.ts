@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { updateOrderStatusForCompany } from "@/src/server/domain/orders/service";
 import type { OrderStatus } from "@/src/server/domain/types";
@@ -45,6 +46,12 @@ export async function PATCH(
 
   if (!dealer) {
     return NextResponse.json({ error: "Bayi bulunamadı" }, { status: 404 });
+  }
+
+  const authError = await requireAdminApi(dealer.id);
+
+  if (authError) {
+    return authError;
   }
 
   let body: unknown;

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDealerBrandStyle } from "@/src/lib/branding";
+import { requireAdminPage } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { listAdminProductsForCompany } from "@/src/server/domain/products/service";
+import { LogoutButton } from "../logout-button";
 import { CampaignsManager } from "./campaigns-manager";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,8 @@ export default async function DealerCampaignsAdminPage({
   if (!dealer) {
     notFound();
   }
+
+  await requireAdminPage(dealer);
 
   const [campaigns, products] = await Promise.all([
     listCampaignsForCompany(dealer.id),
@@ -41,6 +45,7 @@ export default async function DealerCampaignsAdminPage({
               <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
                 Ürünleri yönet
               </Link>
+              <LogoutButton dealerSlug={dealer.slug} />
             </div>
           </div>
           <div className="stats-grid">

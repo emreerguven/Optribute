@@ -11,6 +11,8 @@ import { normalizePhone } from "../src/server/domain/phone";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.adminLoginCode.deleteMany();
+  await prisma.adminUser.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -46,6 +48,27 @@ async function main() {
         primaryColor: "#2563eb",
         currency: "TRY",
         orderLeadTimeMinutes: 60,
+        isActive: true
+      }
+    ]
+  });
+
+  await prisma.adminUser.createMany({
+    data: [
+      {
+        id: "admin_javsu_owner",
+        companyId: "company_javsu",
+        fullName: "Javsu Yetkili",
+        phone: "05550000000",
+        normalizedPhone: normalizePhone("05550000000"),
+        isActive: true
+      },
+      {
+        id: "admin_marmara_owner",
+        companyId: "company_marmara",
+        fullName: "Marmara Yetkili",
+        phone: "05550000001",
+        normalizedPhone: normalizePhone("05550000001"),
         isActive: true
       }
     ]

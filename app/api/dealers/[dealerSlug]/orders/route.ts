@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import {
   createOrder,
@@ -112,6 +113,15 @@ export async function POST(
 
   try {
     const draft = parseOrderDraft(body);
+
+    if (draft.source === "manual") {
+      const authError = await requireAdminApi(dealer.id);
+
+      if (authError) {
+        return authError;
+      }
+    }
+
     const order = await createOrder(dealer.id, draft);
     const primaryPayment = order.payments[0];
     const totalCents =

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { requireAdminApi } from "@/src/server/auth/guards";
 import {
   getCompanyBySlug,
   updateCompanyBranding
@@ -63,6 +64,12 @@ export async function PATCH(
 
   if (!dealer) {
     return NextResponse.json({ error: "Bayi bulunamadı" }, { status: 404 });
+  }
+
+  const authError = await requireAdminApi(dealer.id);
+
+  if (authError) {
+    return authError;
   }
 
   let body: unknown;

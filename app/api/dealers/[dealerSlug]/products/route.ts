@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import {
   createProductForCompany,
@@ -86,6 +87,12 @@ export async function GET(
     return NextResponse.json({ error: "Bayi bulunamadı" }, { status: 404 });
   }
 
+  const authError = await requireAdminApi(dealer.id);
+
+  if (authError) {
+    return authError;
+  }
+
   const products = await listAdminProductsForCompany(dealer.id);
   return NextResponse.json({ products });
 }
@@ -99,6 +106,12 @@ export async function POST(
 
   if (!dealer) {
     return NextResponse.json({ error: "Bayi bulunamadı" }, { status: 404 });
+  }
+
+  const authError = await requireAdminApi(dealer.id);
+
+  if (authError) {
+    return authError;
   }
 
   let body: unknown;

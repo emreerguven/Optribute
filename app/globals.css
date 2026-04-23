@@ -73,6 +73,10 @@ main {
   width: min(calc(100% - 1rem), 1080px);
 }
 
+.login-shell {
+  width: min(calc(100% - 1rem), 620px);
+}
+
 .admin-shell .hero {
   border-color: var(--color-primary-border);
 }
