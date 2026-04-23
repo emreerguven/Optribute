@@ -40,6 +40,14 @@ type DeliveryDraft = {
   deliveryStatus: DeliveryStatus;
 };
 
+type DispatchPreset =
+  | "unassigned"
+  | "assigned"
+  | "out-for-delivery"
+  | "delivered"
+  | "manual"
+  | "qr";
+
 type SortOption = "newest" | "oldest" | "total-desc" | "total-asc";
 type OrderStatusFilter = "all" | OrderStatus;
 type PaymentStatusFilter = "all" | PaymentStatus;
@@ -87,6 +95,24 @@ const DELIVERY_STATUS_OPTIONS: Array<{ value: DeliveryStatus; label: string }> =
   { value: "assigned", label: "Atandı" },
   { value: "out-for-delivery", label: "Dağıtıma çıktı" },
   { value: "delivered", label: "Teslim edildi" }
+];
+
+const BULK_DELIVERY_STATUS_OPTIONS: Array<{
+  value: Exclude<DeliveryStatus, "unassigned">;
+  label: string;
+}> = [
+  { value: "assigned", label: "Atandı" },
+  { value: "out-for-delivery", label: "Dağıtıma çıktı" },
+  { value: "delivered", label: "Teslim edildi" }
+];
+
+const DISPATCH_PRESETS: Array<{ value: DispatchPreset; label: string }> = [
+  { value: "unassigned", label: "Atanmamış" },
+  { value: "assigned", label: "Atananlar" },
+  { value: "out-for-delivery", label: "Dağıtımdakiler" },
+  { value: "delivered", label: "Teslim edilenler" },
+  { value: "manual", label: "Manuel siparişler" },
+  { value: "qr", label: "QR siparişleri" }
 ];
 
 function formatOrderTime(timestamp: string) {
@@ -227,6 +253,7 @@ export function OrdersManager({
   const [message, setMessage] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [manualForm, setManualForm] = useState<ManualOrderForm>(EMPTY_MANUAL_FORM);
   const [manualQuantities, setManualQuantities] = useState<Record<string, number>>({});
   const [deliveryDrafts, setDeliveryDrafts] = useState<Record<string, DeliveryDraft>>({});
@@ -241,6 +268,9 @@ export function OrdersManager({
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<DeliveryStatusFilter>("all");
   const [courierFilter, setCourierFilter] = useState<CourierFilter>(initialCourierFilter);
   const [sortOption, setSortOption] = useState<SortOption>("newest");
+  const [bulkCourierId, setBulkCourierId] = useState("");
+  const [bulkDeliveryStatus, setBulkDeliveryStatus] = useState<Exclude<DeliveryStatus, "unassigned">>("assigned");
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const manualAddressPreview = useMemo(
     () =>
       normalizeStructuredAddress({
@@ -275,6 +305,10 @@ export function OrdersManager({
   const manualCampaignPreview = useMemo(
     () => evaluateBestCampaign(campaigns, manualPreviewItems),
     [campaigns, manualPreviewItems]
+  );
+  const activeCouriers = useMemo(
+    () => couriers.filter((courier) => courier.isActive),
+    [couriers]
   );
 
   const visibleOrders = useMemo(() => {
@@ -334,6 +368,23 @@ export function OrdersManager({
     sourceFilter,
     statusFilter
   ]);
+  const selectedOrders = useMemo(
+    () => orders.filter((order) => selectedOrderIds.includes(order.id)),
+    [orders, selectedOrderIds]
+  );
+  const allVisibleSelected =
+    visibleOrders.length > 0 && visibleOrders.every((order) => selectedOrderIds.includes(order.id));
+  const activeDispatchPreset = useMemo(() => {
+    if (deliveryStatusFilter !== "all" && sourceFilter === "all") {
+      return deliveryStatusFilter as DispatchPreset;
+    }
+
+    if (sourceFilter !== "all" && deliveryStatusFilter === "all") {
+      return sourceFilter as DispatchPreset;
+    }
+
+    return null;
+  }, [deliveryStatusFilter, sourceFilter]);
 
   function updateManualQuantity(productId: string, value: number) {
     setManualQuantities((current) => ({
@@ -368,6 +419,42 @@ export function OrdersManager({
         ? current.filter((id) => id !== orderId)
         : [...current, orderId]
     );
+  }
+
+  function toggleOrderSelected(orderId: string) {
+    setSelectedOrderIds((current) =>
+      current.includes(orderId)
+        ? current.filter((id) => id !== orderId)
+        : [...current, orderId]
+    );
+  }
+
+  function selectAllVisibleOrders() {
+    setSelectedOrderIds((current) => {
+      const next = new Set(current);
+      visibleOrders.forEach((order) => next.add(order.id));
+      return [...next];
+    });
+  }
+
+  function clearSelectedOrders() {
+    setSelectedOrderIds([]);
+  }
+
+  function applyDispatchPreset(preset: DispatchPreset) {
+    if (
+      preset === "unassigned" ||
+      preset === "assigned" ||
+      preset === "out-for-delivery" ||
+      preset === "delivered"
+    ) {
+      setDeliveryStatusFilter(preset);
+      setSourceFilter("all");
+      return;
+    }
+
+    setSourceFilter(preset);
+    setDeliveryStatusFilter("all");
   }
 
   async function handleCustomerLookup() {
@@ -560,6 +647,104 @@ export function OrdersManager({
     }
   }
 
+  async function handleBulkCourierAssign() {
+    if (!bulkCourierId || selectedOrders.length === 0) {
+      setMessage("Toplu atama için kurye ve sipariş seçin.");
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    setMessage(null);
+
+    try {
+      const updatedOrders = await Promise.all(
+        selectedOrders.map(async (order) => {
+          const response = await fetch(`/api/dealers/${dealerSlug}/orders/${order.id}/delivery`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              courierId: bulkCourierId,
+              deliveryStatus: order.deliveryStatus === "unassigned" ? "assigned" : order.deliveryStatus
+            })
+          });
+          const payload = (await response.json()) as { order?: Order; error?: string };
+
+          if (!response.ok || !payload.order) {
+            throw new Error(payload.error ?? "Toplu kurye ataması yapılamadı");
+          }
+
+          return payload.order;
+        })
+      );
+
+      const updatedMap = new Map(updatedOrders.map((order) => [order.id, order]));
+      setOrders((current) => current.map((order) => updatedMap.get(order.id) ?? order));
+      setSelectedOrderIds([]);
+      setBulkCourierId("");
+      setMessage("Seçili siparişler kuryeye atandı.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Toplu kurye ataması yapılamadı");
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }
+
+  async function handleBulkDeliveryStatusUpdate() {
+    if (selectedOrders.length === 0) {
+      setMessage("Toplu durum güncellemesi için sipariş seçin.");
+      return;
+    }
+
+    const missingCourierOrders = selectedOrders.filter(
+      (order) => !(bulkCourierId || order.courier?.id)
+    );
+
+    if (missingCourierOrders.length > 0) {
+      setMessage("Kurye seçilmemiş siparişler için önce kurye atayın.");
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    setMessage(null);
+
+    try {
+      const updatedOrders = await Promise.all(
+        selectedOrders.map(async (order) => {
+          const response = await fetch(`/api/dealers/${dealerSlug}/orders/${order.id}/delivery`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              courierId: bulkCourierId || order.courier?.id || null,
+              deliveryStatus: bulkDeliveryStatus
+            })
+          });
+          const payload = (await response.json()) as { order?: Order; error?: string };
+
+          if (!response.ok || !payload.order) {
+            throw new Error(payload.error ?? "Toplu teslimat durumu güncellenemedi");
+          }
+
+          return payload.order;
+        })
+      );
+
+      const updatedMap = new Map(updatedOrders.map((order) => [order.id, order]));
+      setOrders((current) => current.map((order) => updatedMap.get(order.id) ?? order));
+      setSelectedOrderIds([]);
+      setMessage("Seçili siparişlerin teslimat durumu güncellendi.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Toplu teslimat durumu güncellenemedi"
+      );
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }
+
   return (
     <section className="panel stack">
       <div className="admin-console-shell stack">
@@ -575,6 +760,20 @@ export function OrdersManager({
       </div>
 
       <div className="admin-console-toolbar admin-console-toolbar-wide admin-console-toolbar-sticky">
+        <div className="dispatch-preset-row">
+          {DISPATCH_PRESETS.map((preset) => (
+            <button
+              key={preset.value}
+              type="button"
+              className={`dispatch-preset-chip ${
+                activeDispatchPreset === preset.value ? "dispatch-preset-chip-active" : ""
+              }`}
+              onClick={() => applyDispatchPreset(preset.value)}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
         <label>
           Arama
           <input
@@ -658,6 +857,78 @@ export function OrdersManager({
             <option value="total-asc">Tutar düşükten yükseğe</option>
           </select>
         </label>
+        <div className="dispatch-selection-row">
+          <button
+            type="button"
+            className="button-secondary admin-inline-button"
+            onClick={selectAllVisibleOrders}
+            disabled={visibleOrders.length === 0 || allVisibleSelected}
+          >
+            Tümünü seç
+          </button>
+          <button
+            type="button"
+            className="button-secondary admin-inline-button"
+            onClick={clearSelectedOrders}
+            disabled={selectedOrderIds.length === 0}
+          >
+            Seçimi temizle
+          </button>
+          <span className="caption">{selectedOrderIds.length} sipariş seçili</span>
+        </div>
+        {selectedOrderIds.length > 0 ? (
+          <div className="bulk-action-bar">
+            <label>
+              Toplu kurye atama
+              <select
+                value={bulkCourierId}
+                onChange={(event) => setBulkCourierId(event.target.value)}
+                disabled={isBulkUpdating}
+              >
+                <option value="">Kurye seçin</option>
+                {activeCouriers.map((courier) => (
+                  <option key={courier.id} value={courier.id}>
+                    {courier.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="button-secondary admin-inline-button"
+              onClick={handleBulkCourierAssign}
+              disabled={isBulkUpdating || !bulkCourierId}
+            >
+              {isBulkUpdating ? "İşleniyor..." : "Seçili siparişlere kurye ata"}
+            </button>
+            <label>
+              Toplu teslimat durumu
+              <select
+                value={bulkDeliveryStatus}
+                onChange={(event) =>
+                  setBulkDeliveryStatus(
+                    event.target.value as Exclude<DeliveryStatus, "unassigned">
+                  )
+                }
+                disabled={isBulkUpdating}
+              >
+                {BULK_DELIVERY_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="button admin-inline-button"
+              onClick={handleBulkDeliveryStatusUpdate}
+              disabled={isBulkUpdating}
+            >
+              {isBulkUpdating ? "İşleniyor..." : "Seçili siparişlerde durumu uygula"}
+            </button>
+          </div>
+        ) : null}
       </div>
       </div>
 
@@ -1019,8 +1290,19 @@ export function OrdersManager({
             );
 
             return (
-              <article key={order.id} className="order-card stack">
+              <article
+                key={order.id}
+                className={`order-card stack ${selectedOrderIds.includes(order.id) ? "order-card-selected" : ""}`}
+              >
                 <div className="order-summary-compact">
+                  <label className="order-select-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.includes(order.id)}
+                      onChange={() => toggleOrderSelected(order.id)}
+                      aria-label={`${order.customerName} siparişini seç`}
+                    />
+                  </label>
                   <div className="order-summary-main">
                     <div>
                       <span className="detail-label">Müşteri</span>

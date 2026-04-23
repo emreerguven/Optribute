@@ -1097,6 +1097,50 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
+.dispatch-preset-row,
+.dispatch-selection-row,
+.bulk-action-bar {
+  grid-column: 1 / -1;
+}
+
+.dispatch-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.dispatch-preset-chip {
+  border: 1px solid rgba(17, 35, 31, 0.1);
+  border-radius: 999px;
+  padding: 0.42rem 0.82rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dispatch-preset-chip-active {
+  color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-border);
+}
+
+.dispatch-selection-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.bulk-action-bar {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid var(--color-primary-border);
+}
+
 .manual-order-panel {
   padding: 1rem;
   border-radius: 24px;
@@ -1282,6 +1326,19 @@ textarea {
   gap: 0.85rem;
 }
 
+.order-select-checkbox {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+}
+
+.order-select-checkbox input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
 .order-summary-main {
   display: flex;
   align-items: flex-start;
@@ -1309,6 +1366,14 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+}
+
+.order-card-selected {
+  border-color: var(--color-primary-border);
+  box-shadow: 0 14px 30px var(--color-primary-shadow);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.78)),
+    var(--color-primary-softer);
 }
 
 .route-stop-list {
@@ -1388,6 +1453,15 @@ textarea {
   .order-summary-meta {
     width: 100%;
     justify-content: stretch;
+    flex-direction: column;
+  }
+
+  .dispatch-selection-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dispatch-preset-row {
     flex-direction: column;
   }
 
@@ -1592,6 +1666,11 @@ textarea {
 
   .structured-address-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bulk-action-bar {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+    align-items: end;
   }
 
   .admin-order-list {
