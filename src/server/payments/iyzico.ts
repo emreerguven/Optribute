@@ -33,6 +33,8 @@ export type IyzicoCheckoutSession = {
 };
 
 function getIyzicoConfig(): IyzicoConfig {
+  console.log("IYZI APP_BASE_URL:", process.env.APP_BASE_URL);
+
   const apiKey = process.env.IYZI_API_KEY;
   const secretKey = process.env.IYZI_SECRET_KEY;
   const baseUrl = process.env.IYZI_BASE_URL ?? "https://sandbox-api.iyzipay.com";
