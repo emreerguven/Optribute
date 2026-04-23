@@ -30,10 +30,9 @@ export default async function DealerCampaignsAdminPage({
         <div className="hero-grid">
           <div>
             <span className="kicker">Bayi kampanyaları</span>
-            <h1>{dealer.name} kampanya yönetimi</h1>
+            <h1>Kampanyalar</h1>
             <p className="lead">
-              Müşteri sipariş toplamına otomatik yansıyacak basit kampanyaları buradan yönetin.
-              MVP için aynı siparişte yalnızca en avantajlı tek kampanya uygulanır.
+              Müşteri siparişlerinde otomatik çalışacak kampanyaları yönetin.
             </p>
             <div className="actions">
               <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">

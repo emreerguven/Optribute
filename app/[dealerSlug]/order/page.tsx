@@ -22,6 +22,14 @@ function getBrandStyle(primaryColor: string | null): CSSProperties | undefined {
   } as CSSProperties;
 }
 
+function getBranchTitle(dealer: { slug: string; name: string }) {
+  if (dealer.slug === "javsu") {
+    return "Javsu 100. Yıl Online Şubesi";
+  }
+
+  return `${dealer.name.replace(/\s+Bayi$/i, "")} Online Şubesi`;
+}
+
 export default async function DealerOrderPage({
   params
 }: {
@@ -40,10 +48,11 @@ export default async function DealerOrderPage({
   ]);
 
   const brandStyle = getBrandStyle(dealer.primaryColor);
+  const branchTitle = getBranchTitle(dealer);
 
   return (
     <main className="shell order-shell stack" style={brandStyle}>
-      <section className="hero hero-compact stack">
+      <section className="hero hero-compact order-hero stack">
         <div className="inline-meta">
           <span className="kicker">Online sipariş</span>
           <span className="pill">{dealer.city ?? "Su teslimatı"}</span>
@@ -54,11 +63,8 @@ export default async function DealerOrderPage({
               <img src={dealer.logoUrl} alt={`${dealer.name} logosu`} className="dealer-logo" />
             ) : null}
             <div>
-              <h1>{dealer.name} Online Şubesine Hoş Geldiniz</h1>
-              <p className="lead">
-                Su ve içecek siparişinizi birkaç dokunuşla verin. Önce ürünlerinizi seçin,
-                sonra telefon numaranızla kayıtlı adresinizi hızlıca kontrol edelim.
-              </p>
+              <h1>{branchTitle}</h1>
+              <p className="lead">Hoş geldiniz, siparişinizi birkaç dokunuşla tamamlayın.</p>
             </div>
           </div>
           <div className="tag-row">
@@ -70,7 +76,6 @@ export default async function DealerOrderPage({
 
       <OrderForm
         dealerSlug={dealer.slug}
-        dealerName={dealer.name}
         products={products}
         campaigns={campaigns}
       />

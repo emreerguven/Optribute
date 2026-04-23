@@ -415,7 +415,7 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
           <span className="kicker">Yeni kampanya</span>
           <h2>Kampanya oluştur</h2>
           <p className="caption">
-            V1 basit tutuldu: kupon yok, müşteri hedefleme yok, aynı siparişte tek kampanya uygulanır.
+            Basit kampanyalar oluşturun; uygun siparişlerde otomatik uygulanır.
           </p>
         </div>
 

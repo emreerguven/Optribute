@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import type { Company } from "@/src/server/domain/types";
 
 type Props = {
@@ -20,6 +21,17 @@ const COLOR_PRESETS = [
   "#334155",
   "#7c3aed"
 ];
+
+function brandStyle(color: string): CSSProperties {
+  return {
+    "--color-primary": color,
+    "--color-primary-strong": color,
+    "--color-primary-soft": `color-mix(in srgb, ${color} 10%, white)`,
+    "--color-primary-softer": `color-mix(in srgb, ${color} 6%, white)`,
+    "--color-primary-border": `color-mix(in srgb, ${color} 38%, transparent)`,
+    "--color-primary-shadow": `color-mix(in srgb, ${color} 20%, transparent)`
+  } as CSSProperties;
+}
 
 export function BrandingForm({
   dealerSlug,
@@ -70,6 +82,7 @@ export function BrandingForm({
   }
 
   const previewColor = /^#[0-9A-Fa-f]{6}$/.test(primaryColor) ? primaryColor : COLOR_PRESETS[0];
+  const previewStyle = brandStyle(previewColor);
 
   return (
     <section className="panel stack">
@@ -145,12 +158,21 @@ export function BrandingForm({
                 />
               ))}
             </div>
+            <div className="branding-live-preview" style={previewStyle}>
+              <span>Önizleme</span>
+              <strong>Online sipariş</strong>
+            </div>
           </div>
         </div>
 
         {message ? <p className="note">{message}</p> : null}
 
-        <button type="submit" className="button admin-submit" disabled={isSaving}>
+        <button
+          type="submit"
+          className="button admin-submit"
+          style={previewStyle}
+          disabled={isSaving}
+        >
           {isSaving ? "Kaydediliyor..." : "Marka bilgilerini kaydet"}
         </button>
       </form>

@@ -8,7 +8,6 @@ import type { Campaign, PaymentMethod, Product } from "@/src/server/domain/types
 
 type Props = {
   dealerSlug: string;
-  dealerName: string;
   products: Product[];
   campaigns: Campaign[];
 };
@@ -43,17 +42,6 @@ const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string; description:
   }
 ];
 
-function categoryLabel(category: Product["category"]) {
-  switch (category) {
-    case "water":
-      return "Su";
-    case "soft-drink":
-      return "İçecek";
-    case "bundle":
-      return "Paket";
-  }
-}
-
 function campaignTypeLabel(campaign: Campaign) {
   switch (campaign.type) {
     case "bundle-gift":
@@ -65,18 +53,11 @@ function campaignTypeLabel(campaign: Campaign) {
   }
 }
 
-function campaignDescription(campaign: Campaign) {
-  switch (campaign.type) {
-    case "bundle-gift":
-      return `${campaign.requiredQuantity ?? 0} adet ${campaign.targetProductName ?? "ürün"} ile ${campaign.giftProductName ?? "Joker ürünü"} siparişinize dahil`;
-    case "quantity":
-      return `${campaign.requiredQuantity ?? 0} al ${campaign.payableQuantity ?? 0} öde: ${campaign.targetProductName ?? "seçili ürün"}`;
-    case "cart-discount":
-      return `${formatCurrency(campaign.minCartTotalCents ?? 0)} üzeri sepetlerde ${formatCurrency(campaign.discountAmountCents ?? 0)} indirim`;
-  }
+function campaignCardTitle(campaign: { name: string }) {
+  return campaign.name.replace(/\s+hediye\b/gi, "").replace(/\s+dahil\b/gi, "").trim();
 }
 
-export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props) {
+export function OrderForm({ dealerSlug, products, campaigns }: Props) {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
@@ -188,7 +169,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
       setPhone(payload.customer.phone);
       setAddressLine(payload.customer.addressLine);
       setNotes(payload.customer.notes ?? "");
-      setLookupMessage("Kayıtlı müşteri bilgileri bulundu. Kontrol edip siparişi tamamlayabilirsiniz.");
+      setLookupMessage("Bilgileriniz bulundu.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Müşteri sorgusu yapılamadı";
       setLookupState("error");
@@ -307,8 +288,8 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                       {isApplied ? <span className="campaign-applied-label">Uygulanıyor</span> : null}
                     </div>
                     <div>
-                      <h4>{campaign.name}</h4>
-                      <p className="caption">{campaignDescription(campaign)}</p>
+                      <h4>{campaignCardTitle(campaign)}</h4>
+                      <p className="caption">Sepette otomatik uygulanır</p>
                     </div>
                   </article>
                 );
@@ -338,9 +319,6 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                   </div>
 
                   <div className="catalog-copy">
-                    <div className="tag-row">
-                      <span className="status">{categoryLabel(product.category)}</span>
-                    </div>
                     <div>
                       <h3>{product.name}</h3>
                       <p className="caption">{formatCurrency(product.priceCents)}</p>
@@ -402,7 +380,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                   <div className="separator" />
                   <div className="campaign-summary stack compact-stack">
                     <div>
-                      <strong>{appliedCampaign.name}</strong>
+                      <strong>{campaignCardTitle(appliedCampaign)}</strong>
                       <p className="caption">Kampanya siparişinize uygulandı</p>
                     </div>
                     {appliedCampaign.giftItems.map((item) => (
@@ -563,7 +541,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
               {appliedCampaign ? (
                 <div className="summary-row">
                   <span className="caption">Kampanya</span>
-                  <strong>{appliedCampaign.name}</strong>
+                  <strong>{campaignCardTitle(appliedCampaign)}</strong>
                 </div>
               ) : null}
               <div className="summary-row total-row">
@@ -583,7 +561,11 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
               className="button submit-button"
               disabled={isSubmitting || selectedItems.length === 0}
             >
-              {isSubmitting ? "Sipariş gönderiliyor..." : `${dealerName} için siparişi gönder`}
+              {isSubmitting
+                ? "Sipariş gönderiliyor..."
+                : paymentMethod === "online"
+                  ? "Ödemeye geç"
+                  : "Siparişi tamamla"}
             </button>
           </section>
         </>
