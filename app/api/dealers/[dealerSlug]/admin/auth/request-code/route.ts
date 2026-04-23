@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requestAdminLoginCode } from "@/src/server/auth/admin";
+import { getAdminVerificationDeliveryMode } from "@/src/server/auth/sms";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -33,7 +34,8 @@ export async function POST(
     const result = await requestAdminLoginCode(dealer.id, body.phone);
     return NextResponse.json({
       ok: true,
-      developmentCode: process.env.NODE_ENV === "production" ? undefined : result.developmentCode
+      authMode: getAdminVerificationDeliveryMode(),
+      demoCode: result.delivery.mode === "demo" ? result.delivery.demoCode : undefined
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Kod gönderilemedi";

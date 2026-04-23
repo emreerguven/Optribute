@@ -77,6 +77,32 @@ main {
   width: min(calc(100% - 1rem), 620px);
 }
 
+.login-panel {
+  gap: 1.1rem;
+}
+
+.demo-code-card {
+  padding: 1rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.78)),
+    var(--color-primary-softer);
+  border: 1px solid var(--color-primary-border);
+  box-shadow: 0 12px 24px var(--color-primary-shadow);
+}
+
+.demo-code-value {
+  width: fit-content;
+  padding: 0.65rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--color-primary-border);
+  color: var(--color-primary-strong);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
 .admin-shell .hero {
   border-color: var(--color-primary-border);
 }

@@ -1,23 +1,43 @@
-type SmsResult = {
-  channel: "console";
-  developmentCode?: string;
-};
+import { getAdminAuthMode, type AdminAuthMode } from "@/src/server/auth/config";
 
-export async function sendAdminLoginSms(input: { phone: string; code: string }): Promise<SmsResult> {
-  const provider = process.env.SMS_PROVIDER;
+type SmsResult =
+  | {
+      mode: "demo";
+      demoCode: string;
+    }
+  | {
+      mode: "sms";
+    };
 
-  if (provider && provider !== "console") {
-    throw new Error(`SMS provider is not supported yet: ${provider}`);
+async function sendViaConfiguredProvider(_input: { phone: string; code: string }) {
+  const provider = process.env.SMS_PROVIDER?.trim().toLowerCase();
+
+  if (!provider) {
+    throw new Error("SMS modu için sağlayıcı yapılandırılmadı");
   }
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("SMS provider is not configured for production");
+  throw new Error(`SMS sağlayıcısı henüz uygulanmadı: ${provider}`);
+}
+
+export function getAdminVerificationDeliveryMode(): AdminAuthMode {
+  return getAdminAuthMode();
+}
+
+export async function deliverAdminLoginCode(input: { phone: string; code: string }): Promise<SmsResult> {
+  const mode = getAdminAuthMode();
+
+  if (mode === "demo") {
+    console.log(`[admin-auth][demo] verification code for ${input.phone}: ${input.code}`);
+
+    return {
+      mode: "demo",
+      demoCode: input.code
+    };
   }
 
-  console.log(`[admin-auth] SMS code for ${input.phone}: ${input.code}`);
+  await sendViaConfiguredProvider(input);
 
   return {
-    channel: "console",
-    developmentCode: input.code
+    mode: "sms"
   };
 }

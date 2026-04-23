@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getDealerBrandStyle } from "@/src/lib/branding";
 import { getAdminUserForCompany } from "@/src/server/auth/admin";
+import { getAdminAuthMode } from "@/src/server/auth/config";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { LoginForm } from "./login-form";
 
@@ -24,15 +25,24 @@ export default async function AdminLoginPage({
     redirect(`/${dealer.slug}/admin/orders`);
   }
 
+  const authMode = getAdminAuthMode();
+
   return (
     <main className="shell admin-shell login-shell stack" style={getDealerBrandStyle(dealer.primaryColor)}>
       <section className="hero hero-compact stack">
         <span className="kicker">Yönetim girişi</span>
         <h1>{dealer.name}</h1>
-        <p className="lead">Yönetim ekranına erişmek için telefon numaranızı doğrulayın.</p>
+        <p className="lead">
+          Bu alan korunur. Yalnızca yetkili telefon numaraları doğrulama ile giriş yapabilir.
+        </p>
+        <p className="caption">
+          {authMode === "demo"
+            ? "Demo doğrulama modu açık. Gerçek SMS entegrasyonu henüz aktif değil."
+            : "SMS doğrulama ile giriş yapılır."}
+        </p>
       </section>
 
-      <LoginForm dealerSlug={dealer.slug} />
+      <LoginForm dealerSlug={dealer.slug} authMode={authMode} />
     </main>
   );
 }

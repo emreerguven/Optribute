@@ -2,7 +2,7 @@ import { createHmac, randomInt, timingSafeEqual, randomUUID } from "node:crypto"
 import { db } from "@/src/server/db";
 import { normalizePhone } from "@/src/server/domain/phone";
 import { getAuthSecret, getAdminSession, setAdminSessionCookie } from "@/src/server/auth/session";
-import { sendAdminLoginSms } from "@/src/server/auth/sms";
+import { deliverAdminLoginCode } from "@/src/server/auth/sms";
 
 const LOGIN_CODE_TTL_MINUTES = 10;
 
@@ -68,11 +68,11 @@ export async function requestAdminLoginCode(companyId: string, phone: string) {
     }
   });
 
-  const sms = await sendAdminLoginSms({ phone: adminUser.phone, code });
+  const delivery = await deliverAdminLoginCode({ phone: adminUser.phone, code });
 
   return {
     expiresAt,
-    developmentCode: sms.developmentCode
+    delivery
   };
 }
 

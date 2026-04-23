@@ -5,23 +5,24 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   dealerSlug: string;
+  authMode: "demo" | "sms";
 };
 
 type LoginStep = "phone" | "code";
 
-export function LoginForm({ dealerSlug }: Props) {
+export function LoginForm({ dealerSlug, authMode }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [developmentCode, setDevelopmentCode] = useState<string | null>(null);
+  const [demoCode, setDemoCode] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function requestCode(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
-    setDevelopmentCode(null);
+    setDemoCode(null);
     setIsSubmitting(true);
 
     try {
@@ -32,15 +33,24 @@ export function LoginForm({ dealerSlug }: Props) {
         },
         body: JSON.stringify({ phone })
       });
-      const payload = (await response.json()) as { ok?: boolean; error?: string; developmentCode?: string };
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        demoCode?: string;
+        authMode?: "demo" | "sms";
+      };
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error ?? "Kod gönderilemedi");
       }
 
-      setDevelopmentCode(payload.developmentCode ?? null);
+      setDemoCode(payload.demoCode ?? null);
       setStep("code");
-      setMessage("Doğrulama kodu gönderildi.");
+      setMessage(
+        payload.authMode === "demo"
+          ? "Demo doğrulama kodu hazır."
+          : "Doğrulama kodu gönderildi."
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Kod gönderilemedi");
     } finally {
@@ -82,7 +92,7 @@ export function LoginForm({ dealerSlug }: Props) {
         <form className="stack" onSubmit={requestCode}>
           <div>
             <h2>Telefon numaranızı girin</h2>
-            <p className="caption">Yalnızca yetkili bayi telefonları giriş yapabilir.</p>
+            <p className="caption">Yalnızca yetkili numaralar giriş yapabilir.</p>
           </div>
           <label>
             Telefon numarası
@@ -117,8 +127,16 @@ export function LoginForm({ dealerSlug }: Props) {
               disabled={isSubmitting}
             />
           </label>
-          {developmentCode ? (
-            <div className="note">Geliştirme kodu: {developmentCode}</div>
+          {authMode === "demo" && demoCode ? (
+            <div className="demo-code-card stack compact-stack">
+              <div>
+                <strong>Demo doğrulama kodu</strong>
+                <p className="caption">
+                  Gerçek SMS entegrasyonu henüz aktif değil. Yalnızca yetkili numaralar giriş yapabilir.
+                </p>
+              </div>
+              <div className="demo-code-value">{demoCode}</div>
+            </div>
           ) : null}
           {message ? (
             <div className={`note ${message.includes("gönderildi") ? "" : "warning"}`}>
@@ -136,7 +154,7 @@ export function LoginForm({ dealerSlug }: Props) {
                 setStep("phone");
                 setCode("");
                 setMessage(null);
-                setDevelopmentCode(null);
+                setDemoCode(null);
               }}
               disabled={isSubmitting}
             >
