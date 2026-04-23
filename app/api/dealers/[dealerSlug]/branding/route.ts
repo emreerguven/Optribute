@@ -1,0 +1,69 @@
+import { NextResponse } from "next/server";
+import {
+  getCompanyBySlug,
+  updateCompanyBranding
+} from "@/src/server/domain/companies/service";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeOptionalText(value: unknown, fieldName: string) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error(`${fieldName} geçersiz`);
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function parseBrandingInput(body: unknown) {
+  if (!isRecord(body)) {
+    throw new Error("İstek gövdesi JSON nesnesi olmalıdır");
+  }
+
+  const logoUrl = normalizeOptionalText(body.logoUrl, "Logo bağlantısı");
+  const primaryColor = normalizeOptionalText(body.primaryColor, "Ana renk");
+
+  if (primaryColor && !/^#[0-9A-Fa-f]{6}$/.test(primaryColor)) {
+    throw new Error("Ana renk #RRGGBB formatında olmalıdır");
+  }
+
+  return {
+    logoUrl,
+    primaryColor
+  };
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ dealerSlug: string }> }
+) {
+  const { dealerSlug } = await params;
+  const dealer = await getCompanyBySlug(dealerSlug);
+
+  if (!dealer) {
+    return NextResponse.json({ error: "Bayi bulunamadı" }, { status: 404 });
+  }
+
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "İstek gövdesi geçerli JSON olmalıdır" }, { status: 400 });
+  }
+
+  try {
+    const input = parseBrandingInput(body);
+    const company = await updateCompanyBranding(dealer.id, input);
+    return NextResponse.json({ ok: true, company });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Bayi görünümü güncellenemedi";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}

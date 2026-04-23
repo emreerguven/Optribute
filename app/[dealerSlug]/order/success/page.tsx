@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { CSSProperties } from "react";
 import { formatCurrency } from "@/src/lib/currency";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 
@@ -54,6 +55,14 @@ function paymentStatusCopy(paymentStatus: string) {
   }
 }
 
+function getBrandStyle(primaryColor: string | null): CSSProperties | undefined {
+  if (!primaryColor || !/^#[0-9A-Fa-f]{6}$/.test(primaryColor)) {
+    return undefined;
+  }
+
+  return { "--color-primary": primaryColor } as CSSProperties;
+}
+
 export default async function OrderSuccessPage({
   params,
   searchParams
@@ -76,19 +85,25 @@ export default async function OrderSuccessPage({
   const paymentStatus = readValue(query.paymentStatus);
   const itemCount = Number(readValue(query.itemCount, "0"));
   const statusCopy = paymentStatusCopy(paymentStatus);
+  const brandStyle = getBrandStyle(dealer.primaryColor);
 
   return (
-    <main className="shell success-shell stack">
+    <main className="shell success-shell stack" style={brandStyle}>
       <section className="hero hero-compact stack">
         <div className="success-badge">{statusCopy.badge}</div>
         <div className="stack compact-copy">
-          <div>
-            <h1>{paymentStatus ? statusCopy.title : `Teşekkürler, ${customerName}.`}</h1>
-            <p className="lead">
-              {paymentStatus
-                ? statusCopy.message
-                : `${dealer.name} siparişinizi aldı. Bayi ekibi siparişi şimdi ekranında görüp teslimata hazırlayabilir.`}
-            </p>
+          <div className="dealer-brand-row">
+            {dealer.logoUrl ? (
+              <img src={dealer.logoUrl} alt={`${dealer.name} logosu`} className="dealer-logo" />
+            ) : null}
+            <div>
+              <h1>{paymentStatus ? statusCopy.title : `Teşekkürler, ${customerName}.`}</h1>
+              <p className="lead">
+                {paymentStatus
+                  ? statusCopy.message
+                  : `${dealer.name} siparişinizi aldı. Bayi ekibi siparişi şimdi ekranında görüp teslimata hazırlayabilir.`}
+              </p>
+            </div>
           </div>
           <div className="tag-row">
             {orderId ? <span className="status">Sipariş no: {orderId}</span> : null}

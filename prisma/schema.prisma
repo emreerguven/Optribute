@@ -48,6 +48,8 @@ model Company {
   name                 String
   city                 String?
   supportPhone         String?
+  logoUrl              String?
+  primaryColor         String?
   currency             String    @default("TRY")
   orderLeadTimeMinutes Int       @default(45)
   isActive             Boolean   @default(true)

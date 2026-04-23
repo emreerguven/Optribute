@@ -7,6 +7,8 @@ function toCompany(company: {
   name: string;
   city: string | null;
   supportPhone: string | null;
+  logoUrl: string | null;
+  primaryColor: string | null;
   currency: string;
   orderLeadTimeMinutes: number;
 }): Company {
@@ -16,6 +18,8 @@ function toCompany(company: {
     name: company.name,
     city: company.city,
     supportPhone: company.supportPhone,
+    logoUrl: company.logoUrl,
+    primaryColor: company.primaryColor,
     currency: company.currency,
     orderLeadTimeMinutes: company.orderLeadTimeMinutes
   };
@@ -43,4 +47,24 @@ export async function getCompanyBySlug(slug: string) {
   });
 
   return company ? toCompany(company) : null;
+}
+
+export async function updateCompanyBranding(
+  companyId: string,
+  input: {
+    logoUrl: string | null;
+    primaryColor: string | null;
+  }
+) {
+  const company = await db.company.update({
+    where: {
+      id: companyId
+    },
+    data: {
+      logoUrl: input.logoUrl,
+      primaryColor: input.primaryColor
+    }
+  });
+
+  return toCompany(company);
 }

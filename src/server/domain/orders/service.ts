@@ -175,6 +175,8 @@ function toCompany(company: {
   name: string;
   city: string | null;
   supportPhone: string | null;
+  logoUrl: string | null;
+  primaryColor: string | null;
   currency: string;
   orderLeadTimeMinutes: number;
 }): Company {
@@ -184,6 +186,8 @@ function toCompany(company: {
     name: company.name,
     city: company.city,
     supportPhone: company.supportPhone,
+    logoUrl: company.logoUrl,
+    primaryColor: company.primaryColor,
     currency: company.currency,
     orderLeadTimeMinutes: company.orderLeadTimeMinutes
   };
@@ -196,6 +200,8 @@ function toOrderPaymentSnapshot(order: Parameters<typeof toOrder>[0] & {
     name: string;
     city: string | null;
     supportPhone: string | null;
+    logoUrl: string | null;
+    primaryColor: string | null;
     currency: string;
     orderLeadTimeMinutes: number;
   };

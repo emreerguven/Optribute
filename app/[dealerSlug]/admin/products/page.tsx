@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listAdminProductsForCompany } from "@/src/server/domain/products/service";
+import { BrandingForm } from "./branding-form";
 import { ProductsManager } from "./products-manager";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +57,12 @@ export default async function DealerProductsAdminPage({
           </div>
         </div>
       </section>
+
+      <BrandingForm
+        dealerSlug={dealer.slug}
+        initialLogoUrl={dealer.logoUrl ?? ""}
+        initialPrimaryColor={dealer.primaryColor ?? ""}
+      />
 
       <ProductsManager dealerSlug={dealer.slug} initialProducts={products} />
     </main>

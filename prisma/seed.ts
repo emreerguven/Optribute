@@ -28,6 +28,8 @@ async function main() {
         name: "Javsu Su Bayi",
         city: "Istanbul",
         supportPhone: "+90 212 555 01 01",
+        logoUrl: "/product-images/javsu-19l.svg",
+        primaryColor: "#0f766e",
         currency: "TRY",
         orderLeadTimeMinutes: 45,
         isActive: true
@@ -38,6 +40,8 @@ async function main() {
         name: "Marmara Su Bayi",
         city: "Kocaeli",
         supportPhone: "+90 262 555 02 02",
+        logoUrl: "/product-images/marmara-19l.svg",
+        primaryColor: "#2563eb",
         currency: "TRY",
         orderLeadTimeMinutes: 60,
         isActive: true

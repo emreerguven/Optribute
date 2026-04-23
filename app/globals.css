@@ -8,6 +8,12 @@
   --muted: #5f7069;
   --brand: #0f766e;
   --brand-strong: #115e59;
+  --color-primary: var(--brand);
+  --color-primary-strong: var(--color-primary);
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, white);
+  --color-primary-softer: color-mix(in srgb, var(--color-primary) 6%, white);
+  --color-primary-border: color-mix(in srgb, var(--color-primary) 38%, transparent);
+  --color-primary-shadow: color-mix(in srgb, var(--color-primary) 20%, transparent);
   --accent: #f59e0b;
   --danger: #c2410c;
   --shadow: 0 18px 45px rgba(17, 35, 31, 0.08);
@@ -129,8 +135,8 @@ main {
   gap: 0.45rem;
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
-  color: var(--brand-strong);
-  background: rgba(15, 118, 110, 0.1);
+  color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -226,13 +232,13 @@ button:disabled {
 
 .button {
   color: white;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-strong) 100%);
+  box-shadow: 0 12px 24px var(--color-primary-shadow);
 }
 
 .button-secondary {
-  color: var(--brand-strong);
-  background: rgba(15, 118, 110, 0.08);
+  color: var(--color-primary-strong);
+  background: var(--color-primary-softer);
 }
 
 .button:hover,
@@ -261,7 +267,7 @@ button:disabled {
 }
 
 .nav-link {
-  color: var(--brand-strong);
+  color: var(--color-primary-strong);
   font-weight: 600;
 }
 
@@ -290,13 +296,13 @@ button:disabled {
 }
 
 .step-pill {
-  background: rgba(15, 118, 110, 0.12);
-  color: var(--brand-strong);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
 }
 
 .success-badge {
-  background: rgba(15, 118, 110, 0.14);
-  color: var(--brand-strong);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
   width: fit-content;
 }
 
@@ -343,8 +349,8 @@ textarea {
 }
 
 .status {
-  background: rgba(15, 118, 110, 0.1);
-  color: var(--brand-strong);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
 }
 
 .chip {
@@ -363,8 +369,8 @@ textarea {
   width: fit-content;
   border-radius: 999px;
   padding: 0.58rem 0.95rem;
-  color: var(--brand-strong);
-  background: rgba(15, 118, 110, 0.12);
+  color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
   font-weight: 800;
 }
 
@@ -384,8 +390,8 @@ textarea {
 .note {
   padding: 0.85rem 1rem;
   border-radius: 16px;
-  background: rgba(15, 118, 110, 0.08);
-  color: var(--brand-strong);
+  background: var(--color-primary-softer);
+  color: var(--color-primary-strong);
 }
 
 .catalog-item,
@@ -417,9 +423,9 @@ textarea {
 }
 
 .campaign-card-applied {
-  border-color: rgba(15, 118, 110, 0.42);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 250, 0.82));
-  box-shadow: 0 14px 28px rgba(15, 118, 110, 0.1);
+  border-color: var(--color-primary-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), var(--color-primary-softer));
+  box-shadow: 0 14px 28px var(--color-primary-shadow);
 }
 
 .campaign-card-header {
@@ -447,8 +453,8 @@ textarea {
 }
 
 .campaign-applied-label {
-  color: var(--brand-strong);
-  background: rgba(15, 118, 110, 0.12);
+  color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
 }
 
 .campaign-admin-card {
@@ -456,14 +462,14 @@ textarea {
 }
 
 .campaign-admin-card-editing {
-  border-color: rgba(15, 118, 110, 0.5);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 250, 0.78));
-  box-shadow: 0 16px 34px rgba(15, 118, 110, 0.11);
+  border-color: var(--color-primary-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), var(--color-primary-softer));
+  box-shadow: 0 16px 34px var(--color-primary-shadow);
 }
 
 .campaign-admin-card-updated {
-  border-color: rgba(15, 118, 110, 0.38);
-  background: rgba(240, 253, 250, 0.72);
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-softer);
 }
 
 .campaign-editing-label,
@@ -477,13 +483,31 @@ textarea {
 }
 
 .campaign-editing-label {
-  color: var(--brand-strong);
-  background: rgba(15, 118, 110, 0.14);
+  color: var(--color-primary-strong);
+  background: var(--color-primary-soft);
 }
 
 .campaign-updated-label {
   color: #0f5132;
-  background: rgba(15, 118, 110, 0.1);
+  background: var(--color-primary-soft);
+}
+
+.dealer-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dealer-logo {
+  width: 68px;
+  height: 68px;
+  flex: 0 0 auto;
+  border-radius: 20px;
+  object-fit: contain;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(17, 35, 31, 0.08);
+  box-shadow: 0 10px 22px rgba(17, 35, 31, 0.08);
 }
 
 .campaign-edit-form {
@@ -542,7 +566,7 @@ textarea {
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: var(--brand-strong);
+  color: var(--color-primary-strong);
   font-size: 2rem;
   font-weight: 700;
 }
@@ -609,8 +633,8 @@ textarea {
 .campaign-summary {
   padding: 0.8rem;
   border-radius: 16px;
-  background: rgba(15, 118, 110, 0.055);
-  border: 1px solid rgba(15, 118, 110, 0.12);
+  background: var(--color-primary-softer);
+  border: 1px solid var(--color-primary-border);
   color: var(--text);
 }
 
@@ -695,6 +719,28 @@ textarea {
   gap: 0.9rem;
 }
 
+.branding-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  align-self: end;
+  min-height: 3.2rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(17, 35, 31, 0.08);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.branding-color-dot {
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(17, 35, 31, 0.12);
+}
+
 .product-form-wide {
   grid-column: 1 / -1;
 }
@@ -775,6 +821,11 @@ textarea {
   }
 
   .product-admin-topline {
+    flex-direction: column;
+  }
+
+  .dealer-brand-row {
+    align-items: flex-start;
     flex-direction: column;
   }
 

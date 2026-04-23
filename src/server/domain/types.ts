@@ -21,6 +21,8 @@ export type Company = {
   name: string;
   city: string | null;
   supportPhone: string | null;
+  logoUrl: string | null;
+  primaryColor: string | null;
   currency: string;
   orderLeadTimeMinutes: number;
 };
