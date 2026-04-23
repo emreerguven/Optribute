@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { evaluateBestCampaign } from "@/src/lib/campaigns";
@@ -440,6 +441,15 @@ export function OrderForm({ dealerSlug, products, campaigns }: Props) {
           </button>
         </div>
 
+        <div className="trust-inline-note">
+          <p className="caption">
+            Paylaştığınız bilgiler siparişin alınması ve teslimatı için kullanılır.
+            <Link href="/aydinlatma-metni" className="inline-link legal-link">
+              Aydınlatma Metni
+            </Link>
+          </p>
+        </div>
+
         {lookupMessage ? (
           <div className={`note ${lookupState === "error" ? "warning" : ""}`}>{lookupMessage}</div>
         ) : null}
@@ -488,6 +498,12 @@ export function OrderForm({ dealerSlug, products, campaigns }: Props) {
                   disabled={isSubmitting}
                 />
               </label>
+            </div>
+
+            <div className="trust-inline-note">
+              <p className="caption">
+                Adres ve iletişim bilgileriniz yalnızca siparişin hazırlanması ve teslimatı için görüntülenir.
+              </p>
             </div>
           </section>
 

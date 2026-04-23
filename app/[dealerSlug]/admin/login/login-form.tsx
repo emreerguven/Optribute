@@ -94,7 +94,8 @@ export function LoginForm({ dealerSlug, authMode }: Props) {
         <form className="stack" onSubmit={requestCode}>
           <div>
             <h2>Telefon numaranızı girin</h2>
-            <p className="caption">Yalnızca yetkili numaralar giriş yapabilir.</p>
+            <p className="caption">Bu alan yalnızca yetkili kişiler içindir.</p>
+            <p className="caption">Telefon numaranız doğrulandıktan sonra yönetim ekranına geçebilirsiniz.</p>
           </div>
           <label>
             Telefon numarası
@@ -117,6 +118,7 @@ export function LoginForm({ dealerSlug, authMode }: Props) {
           <div>
             <h2>Doğrulama kodu</h2>
             <p className="caption">Telefonunuza gelen 6 haneli kodu girin.</p>
+            <p className="caption">Doğrulama tamamlandığında yalnızca bu bayiye ait yönetim alanına erişebilirsiniz.</p>
           </div>
           <label>
             Kod

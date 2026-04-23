@@ -3,6 +3,7 @@ import { getDealerBrandStyle } from "@/src/lib/branding";
 import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listProductsForCompany } from "@/src/server/domain/products/service";
+import { CustomerTrustFooter } from "@/src/components/customer-trust-footer";
 import { OrderForm } from "./order-form";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,8 @@ export default async function DealerOrderPage({
         products={products}
         campaigns={campaigns}
       />
+
+      <CustomerTrustFooter supportPhone={dealer.supportPhone} companyLabel={dealer.name} />
     </main>
   );
 }

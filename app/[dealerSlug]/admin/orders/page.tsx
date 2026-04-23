@@ -6,6 +6,7 @@ import { requireAdminPage } from "@/src/server/auth/guards";
 import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listCouriersForCompany } from "@/src/server/domain/couriers/service";
+import { getOperationalOrders } from "@/src/server/domain/orders/retention";
 import { listOrdersForCompany } from "@/src/server/domain/orders/service";
 import { listProductsForCompany } from "@/src/server/domain/products/service";
 import { LogoutButton } from "../logout-button";
@@ -36,9 +37,7 @@ export default async function DealerOrdersAdminPage({
     listActiveCampaignsForCompany(dealer.id),
     listCouriersForCompany(dealer.id)
   ]);
-  const pendingOrders = orders.filter(
-    (order) => order.status !== "completed" && order.status !== "cancelled"
-  );
+  const pendingOrders = getOperationalOrders(orders);
   const pendingAmount = pendingOrders.reduce(
     (sum, order) =>
       sum + order.items.reduce((orderSum, item) => orderSum + item.quantity * item.unitPriceCents, 0),

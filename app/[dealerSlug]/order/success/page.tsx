@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDealerBrandStyle } from "@/src/lib/branding";
 import { formatCurrency } from "@/src/lib/currency";
+import { CustomerTrustFooter } from "@/src/components/customer-trust-footer";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 
 export const dynamic = "force-dynamic";
@@ -145,6 +146,8 @@ export default async function OrderSuccessPage({
           </Link>
         </div>
       </section>
+
+      <CustomerTrustFooter supportPhone={dealer.supportPhone} companyLabel={dealer.name} />
     </main>
   );
 }

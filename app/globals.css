@@ -1381,6 +1381,52 @@ textarea {
   gap: 1rem;
 }
 
+.trust-inline-note {
+  padding: 0.85rem 0.95rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(17, 35, 31, 0.08);
+}
+
+.legal-link {
+  margin-left: 0.45rem;
+  font-weight: 700;
+}
+
+.trust-footer-panel {
+  gap: 0.65rem;
+}
+
+.trust-footer-caption {
+  align-self: center;
+}
+
+.legal-page-shell {
+  padding-bottom: 4rem;
+}
+
+.legal-hero {
+  gap: 0.85rem;
+}
+
+.legal-sections {
+  gap: 1.25rem;
+}
+
+.legal-section h2 {
+  margin-bottom: 0.35rem;
+}
+
+.legal-section p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.legal-footer-panel {
+  align-items: flex-start;
+}
+
 .route-stop-card {
   border-style: dashed;
 }
