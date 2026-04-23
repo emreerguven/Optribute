@@ -161,6 +161,7 @@ export function BrandingForm({
             <div className="branding-live-preview" style={previewStyle}>
               <span>Önizleme</span>
               <strong>Online sipariş</strong>
+              <em>Buton ve vurgular bu renkle görünür</em>
             </div>
           </div>
         </div>

@@ -27,11 +27,8 @@ export default async function DealerProductsAdminPage({
         <div className="hero-grid">
           <div>
             <span className="kicker">Bayi ürünleri</span>
-            <h1>{dealer.name} ürün yönetimi</h1>
-            <p className="lead">
-              Ürünlerinizi bu ekrandan görüntüleyebilir, düzenleyebilir, yeni ürün
-              ekleyebilir ve aktif/pasif durumunu değiştirebilirsiniz.
-            </p>
+            <h1>Ürünler</h1>
+            <p className="lead">Ürünleri ekleyin, düzenleyin ve aktif durumunu yönetin.</p>
             <div className="actions">
               <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
                 Siparişleri gör

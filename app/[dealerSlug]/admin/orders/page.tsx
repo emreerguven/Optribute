@@ -36,9 +36,7 @@ export default async function DealerOrdersAdminPage({
           <div>
             <span className="kicker">Sipariş yönetimi</span>
             <h1>Siparişler</h1>
-            <p className="lead">
-              Gelen siparişleri takip edin, durumlarını güncelleyin ve ödeme bilgisini kontrol edin.
-            </p>
+            <p className="lead">Gelen siparişleri takip edin ve durumlarını güncelleyin.</p>
             <div className="actions">
               <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
                 Ürünleri yönet

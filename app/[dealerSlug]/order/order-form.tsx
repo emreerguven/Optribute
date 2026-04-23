@@ -381,7 +381,7 @@ export function OrderForm({ dealerSlug, products, campaigns }: Props) {
                   <div className="campaign-summary stack compact-stack">
                     <div>
                       <strong>{campaignCardTitle(appliedCampaign)}</strong>
-                      <p className="caption">Kampanya siparişinize uygulandı</p>
+                      <p className="caption">Sepette otomatik uygulanır</p>
                     </div>
                     {appliedCampaign.giftItems.map((item) => (
                       <div key={`${item.productId}_${item.name}`} className="summary-row">

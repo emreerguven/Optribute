@@ -26,7 +26,7 @@ const CAMPAIGN_TYPE_OPTIONS: Array<{ value: CampaignType; label: string; descrip
   {
     value: "bundle-gift",
     label: "Hediye ürün kampanyası",
-    description: "Örn. 1 Damacana alana 1 Soda hediye"
+    description: "Örn. 1 Damacana alana 1 Soda"
   },
   {
     value: "quantity",
@@ -79,7 +79,7 @@ function campaignTypeLabel(type: CampaignType) {
 function campaignDescription(campaign: Campaign) {
   switch (campaign.type) {
     case "bundle-gift":
-      return `${campaign.requiredQuantity ?? 0} ${campaign.targetProductName ?? "ürün"} alana ${campaign.giftProductName ?? "hediye ürün"} hediye`;
+      return `${campaign.requiredQuantity ?? 0} ${campaign.targetProductName ?? "ürün"} ile ${campaign.giftProductName ?? "kampanya ürünü"}`;
     case "quantity":
       return `${campaign.requiredQuantity ?? 0} al ${campaign.payableQuantity ?? 0} öde: ${campaign.targetProductName ?? "ürün"}`;
     case "cart-discount":
@@ -414,9 +414,7 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
         <div>
           <span className="kicker">Yeni kampanya</span>
           <h2>Kampanya oluştur</h2>
-          <p className="caption">
-            Basit kampanyalar oluşturun; uygun siparişlerde otomatik uygulanır.
-          </p>
+          <p className="caption">Uygun siparişlerde otomatik uygulanır.</p>
         </div>
 
         <form className="stack" onSubmit={handleCreateCampaign}>
@@ -443,9 +441,7 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
         <div>
           <span className="kicker">Kampanya listesi</span>
           <h2>Mevcut kampanyalar</h2>
-          <p className="caption">
-            Müşteri siparişinde birden fazla kampanya uygun olsa bile sistem yalnızca en avantajlı tek kampanyayı uygular.
-          </p>
+          <p className="caption">Aynı siparişte tek kampanya uygulanır.</p>
         </div>
 
         {sortedCampaigns.length === 0 ? (

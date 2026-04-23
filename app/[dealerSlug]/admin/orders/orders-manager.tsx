@@ -141,9 +141,7 @@ export function OrdersManager({ dealerSlug, initialOrders }: Props) {
       <div>
         <span className="kicker">Gelen siparişler</span>
         <h2>Sipariş listesi</h2>
-        <p className="caption">
-          Müşteri, adres, ürün, ödeme ve durum bilgilerini tek ekranda takip edin.
-        </p>
+        <p className="caption">Müşteri, adres, ödeme ve ürün bilgilerini görün.</p>
       </div>
 
       {message ? (
