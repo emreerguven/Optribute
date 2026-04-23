@@ -178,8 +178,10 @@ main {
 
 .dealer-hero-visual {
   position: relative;
+  width: 100%;
   overflow: hidden;
-  min-height: 160px;
+  aspect-ratio: 16 / 9;
+  max-height: 520px;
   border-radius: 26px;
   background: var(--color-primary-softer);
   border: 1px solid var(--color-primary-border);
@@ -197,8 +199,9 @@ main {
 .dealer-hero-visual img {
   display: block;
   width: 100%;
-  height: clamp(160px, 28vw, 230px);
+  height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .hero-grid,
@@ -1267,12 +1270,11 @@ textarea {
   }
 
   .dealer-hero-visual {
-    min-height: 104px;
     border-radius: 18px;
   }
 
   .dealer-hero-visual img {
-    height: 104px;
+    height: 100%;
   }
 
   .order-hero h1 {
