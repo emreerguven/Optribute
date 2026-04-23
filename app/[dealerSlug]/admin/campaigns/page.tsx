@@ -5,6 +5,7 @@ import { requireAdminPage } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listCampaignsForCompany } from "@/src/server/domain/campaigns/service";
 import { listAdminProductsForCompany } from "@/src/server/domain/products/service";
+import { AdminBrandHeader } from "@/src/components/admin-brand-header";
 import { LogoutButton } from "../logout-button";
 import { CampaignsManager } from "./campaigns-manager";
 
@@ -32,29 +33,30 @@ export default async function DealerCampaignsAdminPage({
 
   return (
     <main className="shell admin-shell stack" style={brandStyle}>
-      <section className="hero hero-compact stack">
-        <div className="hero-grid">
-          <div>
-            <span className="kicker">Bayi kampanyaları</span>
-            <h1>Kampanyalar</h1>
-            <p className="lead">Siparişlerde otomatik çalışacak kampanyaları yönetin.</p>
-            <div className="actions">
-              <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
-                Dashboard
-              </Link>
-              <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
-                Siparişleri gör
-              </Link>
-              <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
-                Ürünleri yönet
-              </Link>
-              <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
-                Kuryeleri yönet
-              </Link>
-              <LogoutButton dealerSlug={dealer.slug} />
-            </div>
-          </div>
-          <div className="stats-grid">
+      <AdminBrandHeader
+        dealer={dealer}
+        kicker="Bayi kampanyaları"
+        title="Kampanyalar"
+        description="Siparişlerde otomatik çalışacak kampanyaları yönetin."
+        actions={
+          <>
+            <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
+              Dashboard
+            </Link>
+            <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
+              Siparişleri gör
+            </Link>
+            <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
+              Ürünleri yönet
+            </Link>
+            <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
+              Kuryeleri yönet
+            </Link>
+            <LogoutButton dealerSlug={dealer.slug} />
+          </>
+        }
+        summary={
+          <>
             <div className="metric">
               <div className="metric-value">{campaigns.length}</div>
               <div>Toplam kampanya</div>
@@ -65,9 +67,9 @@ export default async function DealerCampaignsAdminPage({
               </div>
               <div>Aktif kampanya</div>
             </div>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <CampaignsManager dealerSlug={dealer.slug} initialCampaigns={campaigns} products={products} />
     </main>

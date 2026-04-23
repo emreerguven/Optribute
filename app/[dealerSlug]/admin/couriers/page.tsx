@@ -4,6 +4,7 @@ import { getDealerBrandStyle } from "@/src/lib/branding";
 import { requireAdminPage } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { listCouriersForCompany } from "@/src/server/domain/couriers/service";
+import { AdminBrandHeader } from "@/src/components/admin-brand-header";
 import { LogoutButton } from "../logout-button";
 import { CouriersManager } from "./couriers-manager";
 
@@ -28,29 +29,30 @@ export default async function DealerCouriersAdminPage({
 
   return (
     <main className="shell admin-shell stack" style={brandStyle}>
-      <section className="hero hero-compact stack">
-        <div className="hero-grid">
-          <div>
-            <span className="kicker">Kurye yönetimi</span>
-            <h1>Kuryeler</h1>
-            <p className="lead">Kuryeleri ekleyin, aktifliğini yönetin ve sipariş atamalarına hazırlayın.</p>
-            <div className="actions">
-              <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
-                Dashboard
-              </Link>
-              <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
-                Siparişleri gör
-              </Link>
-              <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
-                Ürünleri yönet
-              </Link>
-              <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
-                Kampanyaları yönet
-              </Link>
-              <LogoutButton dealerSlug={dealer.slug} />
-            </div>
-          </div>
-          <div className="stats-grid">
+      <AdminBrandHeader
+        dealer={dealer}
+        kicker="Kurye yönetimi"
+        title="Kuryeler"
+        description="Kuryeleri ekleyin, aktifliğini yönetin ve sipariş atamalarına hazırlayın."
+        actions={
+          <>
+            <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
+              Dashboard
+            </Link>
+            <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
+              Siparişleri gör
+            </Link>
+            <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
+              Ürünleri yönet
+            </Link>
+            <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
+              Kampanyaları yönet
+            </Link>
+            <LogoutButton dealerSlug={dealer.slug} />
+          </>
+        }
+        summary={
+          <>
             <div className="metric">
               <div className="metric-value">{couriers.length}</div>
               <div>Toplam kurye</div>
@@ -59,9 +61,9 @@ export default async function DealerCouriersAdminPage({
               <div className="metric-value">{couriers.filter((courier) => courier.isActive).length}</div>
               <div>Aktif kurye</div>
             </div>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <CouriersManager dealerSlug={dealer.slug} initialCouriers={couriers} />
     </main>

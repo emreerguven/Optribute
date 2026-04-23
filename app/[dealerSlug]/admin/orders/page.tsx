@@ -9,6 +9,7 @@ import { listCouriersForCompany } from "@/src/server/domain/couriers/service";
 import { getOperationalOrders } from "@/src/server/domain/orders/retention";
 import { listOrdersForCompany } from "@/src/server/domain/orders/service";
 import { listProductsForCompany } from "@/src/server/domain/products/service";
+import { AdminBrandHeader } from "@/src/components/admin-brand-header";
 import { LogoutButton } from "../logout-button";
 import { OrdersManager } from "./orders-manager";
 
@@ -19,10 +20,16 @@ export default async function DealerOrdersAdminPage({
   searchParams
 }: {
   params: Promise<{ dealerSlug: string }>;
-  searchParams: Promise<{ courier?: string }>;
+  searchParams: Promise<{
+    courier?: string;
+    delivery?: string;
+    source?: string;
+    today?: string;
+    order?: string;
+  }>;
 }) {
   const { dealerSlug } = await params;
-  const { courier } = await searchParams;
+  const { courier, delivery, source, today, order } = await searchParams;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {
@@ -47,29 +54,30 @@ export default async function DealerOrdersAdminPage({
 
   return (
     <main className="shell admin-shell stack" style={brandStyle}>
-      <section className="hero hero-compact stack">
-        <div className="hero-grid">
-          <div>
-            <span className="kicker">Sipariş yönetimi</span>
-            <h1>Siparişler</h1>
-            <p className="lead">Gelen siparişleri takip edin ve durumlarını güncelleyin.</p>
-            <div className="actions">
-              <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
-                Dashboard
-              </Link>
-              <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
-                Ürünleri yönet
-              </Link>
-              <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
-                Kampanyaları yönet
-              </Link>
-              <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
-                Kuryeleri yönet
-              </Link>
-              <LogoutButton dealerSlug={dealer.slug} />
-            </div>
-          </div>
-          <div className="stats-grid">
+      <AdminBrandHeader
+        dealer={dealer}
+        kicker="Sipariş yönetimi"
+        title="Siparişler"
+        description="Gelen siparişleri takip edin ve durumlarını güncelleyin."
+        actions={
+          <>
+            <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
+              Dashboard
+            </Link>
+            <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
+              Ürünleri yönet
+            </Link>
+            <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
+              Kampanyaları yönet
+            </Link>
+            <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
+              Kuryeleri yönet
+            </Link>
+            <LogoutButton dealerSlug={dealer.slug} />
+          </>
+        }
+        summary={
+          <>
             <div className="metric">
               <div className="metric-value">{pendingOrders.length}</div>
               <div>Bekleyen sipariş</div>
@@ -78,9 +86,9 @@ export default async function DealerOrdersAdminPage({
               <div className="metric-value">{formatCurrency(pendingAmount)}</div>
               <div>Bekleyen tutar</div>
             </div>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <OrdersManager
         dealerSlug={dealer.slug}
@@ -89,6 +97,17 @@ export default async function DealerOrdersAdminPage({
         campaigns={campaigns}
         couriers={couriers}
         initialCourierFilter={courier ?? "all"}
+        initialDeliveryFilter={
+          delivery === "unassigned" ||
+          delivery === "assigned" ||
+          delivery === "out-for-delivery" ||
+          delivery === "delivered"
+            ? delivery
+            : "all"
+        }
+        initialSourceFilter={source === "manual" || source === "qr" ? source : "all"}
+        initialTodayOnly={today === "1"}
+        initialHighlightedOrderId={order ?? null}
       />
     </main>
   );

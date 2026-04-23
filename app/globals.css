@@ -167,6 +167,69 @@ main {
   overflow: hidden;
 }
 
+.admin-brand-header {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 1.1rem;
+}
+
+.admin-brand-header-media {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.admin-brand-header-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-brand-header-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--color-primary-border);
+  backdrop-filter: blur(14px);
+}
+
+.admin-brand-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.admin-brand-logo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-strong);
+  font-weight: 800;
+}
+
+.admin-brand-actions {
+  justify-content: flex-end;
+}
+
+.admin-brand-grid {
+  align-items: end;
+}
+
 .hero-compact {
   gap: 0.85rem;
   padding: 1.1rem;
@@ -1490,6 +1553,11 @@ textarea {
     flex-direction: column;
   }
 
+  .admin-brand-header-topline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .admin-console-head {
     flex-direction: column;
   }
@@ -1719,6 +1787,21 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.metric-link,
+.dashboard-list-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.metric-link {
+  display: block;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.metric-link:hover {
+  transform: translateY(-1px);
+}
+
 .dashboard-card-head,
 .dashboard-list-row,
 .dashboard-inline-stats,
@@ -1746,6 +1829,11 @@ textarea {
   border-radius: 18px;
   border: 1px solid var(--card-border);
   background: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-list-link:hover {
+  border-color: var(--color-primary-border);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .dashboard-list-row-spread {
@@ -1862,6 +1950,14 @@ textarea {
 .dashboard-footnote {
   display: grid;
   gap: 0.55rem;
+}
+
+.order-card-highlighted {
+  border-color: var(--color-primary-border);
+  box-shadow: 0 12px 28px var(--color-primary-shadow);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.76)),
+    var(--color-primary-softer);
 }
 
   .product-admin-list {

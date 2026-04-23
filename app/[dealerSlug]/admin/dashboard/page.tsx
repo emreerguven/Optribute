@@ -4,6 +4,7 @@ import { getDealerBrandStyle } from "@/src/lib/branding";
 import { formatCurrency } from "@/src/lib/currency";
 import { requireAdminPage } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
+import { AdminBrandHeader } from "@/src/components/admin-brand-header";
 import {
   getDealerDashboardSnapshot,
 } from "@/src/server/domain/dashboard/service";
@@ -125,57 +126,60 @@ export default async function DealerDashboardPage({
     timeZone: "Europe/Istanbul"
   });
   const brandStyle = getDealerBrandStyle(dealer.primaryColor);
+  const todayOrdersHref = `/${dealer.slug}/admin/orders?today=1`;
 
   return (
     <main className="shell admin-shell stack" style={brandStyle}>
-      <section className="hero hero-compact stack">
-        <div className="hero-grid">
-          <div>
-            <span className="kicker">Genel görünüm</span>
-            <h1>Dashboard</h1>
-            <p className="lead">
-              Bugünkü sipariş akışını, ödeme görünümünü ve kurye yükünü tek ekranda izleyin.
-            </p>
-            <div className="actions">
-              <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
-                Siparişler
-              </Link>
-              <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
-                Ürünler
-              </Link>
-              <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
-                Kampanyalar
-              </Link>
-              <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
-                Kuryeler
-              </Link>
-              <LogoutButton dealerSlug={dealer.slug} />
-            </div>
-          </div>
-          <div className="stats-grid dashboard-kpi-grid">
-            <div className="metric">
+      <AdminBrandHeader
+        dealer={dealer}
+        kicker="Genel görünüm"
+        title="Dashboard"
+        description="Bugünkü sipariş akışını, ödeme görünümünü ve kurye yükünü tek ekranda izleyin."
+        actions={
+          <>
+            <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
+              Siparişler
+            </Link>
+            <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
+              Ürünler
+            </Link>
+            <Link href={`/${dealer.slug}/admin/campaigns`} className="button-secondary">
+              Kampanyalar
+            </Link>
+            <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
+              Kuryeler
+            </Link>
+            <LogoutButton dealerSlug={dealer.slug} />
+          </>
+        }
+        summary={
+          <>
+            <Link href={todayOrdersHref} className="metric metric-link">
               <div className="metric-label">Bugün</div>
               <div className="metric-value">{snapshot.todayOrdersCount}</div>
               <div>Bugünkü siparişler</div>
-            </div>
-            <div className="metric">
+            </Link>
+            <Link href={todayOrdersHref} className="metric metric-link">
               <div className="metric-label">Bugün</div>
               <div className="metric-value">{formatCurrency(snapshot.todayRevenueCents)}</div>
               <div>Bugünkü ciro</div>
-            </div>
-            <div className="metric">
+            </Link>
+            <Link href={`/${dealer.slug}/admin/orders?delivery=unassigned`} className="metric metric-link">
               <div className="metric-label">Canlı operasyon</div>
               <div className="metric-value">{snapshot.unassignedOrdersCount}</div>
               <div>Atanmamış siparişler</div>
-            </div>
-            <div className="metric">
+            </Link>
+            <Link
+              href={`/${dealer.slug}/admin/orders?delivery=out-for-delivery`}
+              className="metric metric-link"
+            >
               <div className="metric-label">Canlı operasyon</div>
               <div className="metric-value">{snapshot.outForDeliveryOrdersCount}</div>
               <div>Dağıtımdaki siparişler</div>
-            </div>
-          </div>
-        </div>
-      </section>
+            </Link>
+          </>
+        }
+      />
 
       <section className="dashboard-grid">
         <article className="panel stack dashboard-card dashboard-card-wide">
@@ -202,12 +206,16 @@ export default async function DealerDashboardPage({
           {snapshot.topProducts.length > 0 ? (
             <div className="dashboard-list">
               {snapshot.topProducts.map((product, index) => (
-                <div key={`${product.name}-${index}`} className="dashboard-list-row">
+                <Link
+                  key={`${product.name}-${index}`}
+                  href={`/${dealer.slug}/admin/products`}
+                  className="dashboard-list-row dashboard-list-link"
+                >
                   <div>
                     <strong>{product.name}</strong>
                   </div>
                   <span className="dashboard-strong">{product.quantity} adet</span>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
@@ -265,7 +273,11 @@ export default async function DealerDashboardPage({
           {snapshot.courierWorkloads.length > 0 ? (
             <div className="dashboard-list">
               {snapshot.courierWorkloads.map((entry) => (
-                <div key={entry.courier.id} className="dashboard-list-row dashboard-list-row-spread">
+                <Link
+                  key={entry.courier.id}
+                  href={`/${dealer.slug}/admin/couriers/${entry.courier.id}`}
+                  className="dashboard-list-row dashboard-list-row-spread dashboard-list-link"
+                >
                   <div className="stack-tight">
                     <strong>{entry.courier.fullName}</strong>
                     <span className="caption">{entry.courier.phone}</span>
@@ -275,7 +287,7 @@ export default async function DealerDashboardPage({
                     <span className="caption">Atandı {entry.assignedCount}</span>
                     <span className="caption">Dağıtımda {entry.outForDeliveryCount}</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
@@ -299,7 +311,11 @@ export default async function DealerDashboardPage({
                 const primaryPayment = order.payments[0] ?? null;
 
                 return (
-                  <div key={order.id} className="dashboard-recent-row">
+                  <Link
+                    key={order.id}
+                    href={`/${dealer.slug}/admin/orders?order=${order.id}`}
+                    className="dashboard-recent-row dashboard-list-link"
+                  >
                     <div className="stack-tight">
                       <strong>{order.customerName}</strong>
                       <span className="caption">{order.phone}</span>
@@ -317,7 +333,7 @@ export default async function DealerDashboardPage({
                       ) : null}
                     </div>
                     <span className="caption">{formatOrderTime(order.createdAt)}</span>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

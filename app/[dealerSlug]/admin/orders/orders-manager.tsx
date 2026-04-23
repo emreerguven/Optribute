@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatAddressMeta, normalizeStructuredAddress, type StructuredAddressInput } from "@/src/lib/address";
 import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
@@ -24,6 +24,10 @@ type Props = {
   campaigns: Campaign[];
   couriers: Courier[];
   initialCourierFilter?: string;
+  initialDeliveryFilter?: DeliveryStatusFilter;
+  initialSourceFilter?: SourceFilter;
+  initialTodayOnly?: boolean;
+  initialHighlightedOrderId?: string | null;
 };
 
 type ManualOrderForm = {
@@ -119,6 +123,15 @@ function formatOrderTime(timestamp: string) {
   return new Intl.DateTimeFormat("tr-TR", {
     dateStyle: "medium",
     timeStyle: "short"
+  }).format(new Date(timestamp));
+}
+
+function getIstanbulDateKey(timestamp: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
   }).format(new Date(timestamp));
 }
 
@@ -246,13 +259,19 @@ export function OrdersManager({
   products,
   campaigns,
   couriers,
-  initialCourierFilter = "all"
+  initialCourierFilter = "all",
+  initialDeliveryFilter = "all",
+  initialSourceFilter = "all",
+  initialTodayOnly = false,
+  initialHighlightedOrderId = null
 }: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>([]);
+  const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>(
+    initialHighlightedOrderId ? [initialHighlightedOrderId] : []
+  );
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [manualForm, setManualForm] = useState<ManualOrderForm>(EMPTY_MANUAL_FORM);
   const [manualQuantities, setManualQuantities] = useState<Record<string, number>>({});
@@ -264,13 +283,28 @@ export function OrdersManager({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatusFilter>("all");
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
-  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<DeliveryStatusFilter>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(initialSourceFilter);
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<DeliveryStatusFilter>(initialDeliveryFilter);
   const [courierFilter, setCourierFilter] = useState<CourierFilter>(initialCourierFilter);
+  const [todayOnly, setTodayOnly] = useState(initialTodayOnly);
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [bulkCourierId, setBulkCourierId] = useState("");
   const [bulkDeliveryStatus, setBulkDeliveryStatus] = useState<Exclude<DeliveryStatus, "unassigned">>("assigned");
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  useEffect(() => {
+    if (!initialHighlightedOrderId) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const element = document.getElementById(`order-${initialHighlightedOrderId}`);
+      element?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialHighlightedOrderId]);
+
   const manualAddressPreview = useMemo(
     () =>
       normalizeStructuredAddress({
@@ -313,6 +347,7 @@ export function OrdersManager({
 
   const visibleOrders = useMemo(() => {
     const query = normalizeSearch(searchTerm);
+    const todayKey = getIstanbulDateKey(new Date().toISOString());
 
     return [...orders]
       .filter((order) => {
@@ -343,6 +378,10 @@ export function OrdersManager({
           return false;
         }
 
+        if (todayOnly && getIstanbulDateKey(order.createdAt) !== todayKey) {
+          return false;
+        }
+
         return true;
       })
       .sort((first, second) => {
@@ -366,7 +405,8 @@ export function OrdersManager({
     searchTerm,
     sortOption,
     sourceFilter,
-    statusFilter
+    statusFilter,
+    todayOnly
   ]);
   const selectedOrders = useMemo(
     () => orders.filter((order) => selectedOrderIds.includes(order.id)),
@@ -773,6 +813,13 @@ export function OrdersManager({
               {preset.label}
             </button>
           ))}
+          <button
+            type="button"
+            className={`dispatch-preset-chip ${todayOnly ? "dispatch-preset-chip-active" : ""}`}
+            onClick={() => setTodayOnly((current) => !current)}
+          >
+            Bugün
+          </button>
         </div>
         <label>
           Arama
@@ -1292,7 +1339,10 @@ export function OrdersManager({
             return (
               <article
                 key={order.id}
-                className={`order-card stack ${selectedOrderIds.includes(order.id) ? "order-card-selected" : ""}`}
+                id={`order-${order.id}`}
+                className={`order-card stack ${selectedOrderIds.includes(order.id) ? "order-card-selected" : ""} ${
+                  initialHighlightedOrderId === order.id ? "order-card-highlighted" : ""
+                }`}
               >
                 <div className="order-summary-compact">
                   <label className="order-select-checkbox">
