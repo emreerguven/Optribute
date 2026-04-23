@@ -62,6 +62,7 @@ export default async function DealerProductsAdminPage({
         dealerSlug={dealer.slug}
         initialLogoUrl={dealer.logoUrl ?? ""}
         initialPrimaryColor={dealer.primaryColor ?? ""}
+        initialLeadTimeMinutes={dealer.orderLeadTimeMinutes}
       />
 
       <ProductsManager dealerSlug={dealer.slug} initialProducts={products} />

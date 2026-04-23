@@ -60,7 +60,14 @@ function getBrandStyle(primaryColor: string | null): CSSProperties | undefined {
     return undefined;
   }
 
-  return { "--color-primary": primaryColor } as CSSProperties;
+  return {
+    "--color-primary": primaryColor,
+    "--color-primary-strong": primaryColor,
+    "--color-primary-soft": `color-mix(in srgb, ${primaryColor} 10%, white)`,
+    "--color-primary-softer": `color-mix(in srgb, ${primaryColor} 6%, white)`,
+    "--color-primary-border": `color-mix(in srgb, ${primaryColor} 38%, transparent)`,
+    "--color-primary-shadow": `color-mix(in srgb, ${primaryColor} 20%, transparent)`
+  } as CSSProperties;
 }
 
 function formatOrderReference(orderId: string) {

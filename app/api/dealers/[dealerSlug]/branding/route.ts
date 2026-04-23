@@ -28,14 +28,25 @@ function parseBrandingInput(body: unknown) {
 
   const logoUrl = normalizeOptionalText(body.logoUrl, "Logo bağlantısı");
   const primaryColor = normalizeOptionalText(body.primaryColor, "Ana renk");
+  const orderLeadTimeMinutes = body.orderLeadTimeMinutes;
 
   if (primaryColor && !/^#[0-9A-Fa-f]{6}$/.test(primaryColor)) {
     throw new Error("Ana renk #RRGGBB formatında olmalıdır");
   }
 
+  if (
+    typeof orderLeadTimeMinutes !== "number" ||
+    !Number.isInteger(orderLeadTimeMinutes) ||
+    orderLeadTimeMinutes < 10 ||
+    orderLeadTimeMinutes > 240
+  ) {
+    throw new Error("Teslimat süresi 10-240 dakika arasında olmalıdır");
+  }
+
   return {
     logoUrl,
-    primaryColor
+    primaryColor,
+    orderLeadTimeMinutes
   };
 }
 

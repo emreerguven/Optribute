@@ -145,6 +145,15 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
     });
   }
 
+  function setQuantity(productId: string, value: string) {
+    const parsed = Number(value);
+
+    setQuantities((current) => ({
+      ...current,
+      [productId]: Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0
+    }));
+  }
+
   async function handleLookup() {
     if (!phone.trim()) {
       setLookupMessage("Devam etmek için önce telefon numaranızı girin.");
@@ -274,8 +283,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
         <div className="section-heading">
           <span className="step-pill">1</span>
           <div>
-            <h2>Ürünlerinizi seçin</h2>
-            <p className="caption">Miktarı artırıp azaltarak siparişinizi hazırlayın.</p>
+            <h2>Ürünlerimiz</h2>
           </div>
         </div>
 
@@ -283,7 +291,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
           <div className="campaigns-section stack">
             <div>
               <h3>Mevcut kampanyalar</h3>
-              <p className="caption">Uygun olan kampanya siparişinize otomatik dahil edilir.</p>
+              <p className="caption">Uygun olan kampanya siparişinize otomatik uygulanır.</p>
             </div>
             <div className="campaign-card-list">
               {campaigns.map((campaign) => {
@@ -332,11 +340,10 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                   <div className="catalog-copy">
                     <div className="tag-row">
                       <span className="status">{categoryLabel(product.category)}</span>
-                      <span className="pill">{product.unitLabel}</span>
                     </div>
                     <div>
                       <h3>{product.name}</h3>
-                      <p className="caption">{formatCurrency(product.priceCents)} / ürün</p>
+                      <p className="caption">{formatCurrency(product.priceCents)}</p>
                     </div>
                   </div>
                 </div>
@@ -351,7 +358,17 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                   >
                     -
                   </button>
-                  <span className="stepper-value">{quantity}</span>
+                  <input
+                    type="number"
+                    className="stepper-value"
+                    min="0"
+                    inputMode="numeric"
+                    value={quantity}
+                    onChange={(event) => setQuantity(product.id, event.target.value)}
+                    onFocus={(event) => event.target.select()}
+                    disabled={isSubmitting}
+                    aria-label={`${product.name} miktarı`}
+                  />
                   <button
                     type="button"
                     className="stepper-button"
@@ -386,7 +403,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
                   <div className="campaign-summary stack compact-stack">
                     <div>
                       <strong>{appliedCampaign.name}</strong>
-                      <p className="caption">Siparişinize dahil edildi</p>
+                      <p className="caption">Kampanya siparişinize uygulandı</p>
                     </div>
                     {appliedCampaign.giftItems.map((item) => (
                       <div key={`${item.productId}_${item.name}`} className="summary-row">
@@ -420,7 +437,6 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
           <span className="step-pill">2</span>
           <div>
             <h2>Telefon numaranızı girin</h2>
-            <p className="caption">Kayıtlı müşteriyseniz ad ve adresiniz otomatik dolsun.</p>
           </div>
         </div>
 
@@ -442,7 +458,7 @@ export function OrderForm({ dealerSlug, dealerName, products, campaigns }: Props
             onClick={handleLookup}
             disabled={isLookingUp || isSubmitting}
           >
-            {isLookingUp ? "Kontrol ediliyor..." : "Bilgilerimi getir"}
+            {isLookingUp ? "Kontrol ediliyor..." : "Numaramı onayla"}
           </button>
         </div>
 

@@ -34,11 +34,10 @@ export default async function DealerOrdersAdminPage({
       <section className="hero hero-compact stack">
         <div className="hero-grid">
           <div>
-            <span className="kicker">Bayi ekranı</span>
-            <h1>{dealer.name} sipariş listesi</h1>
+            <span className="kicker">Sipariş yönetimi</span>
+            <h1>Siparişler</h1>
             <p className="lead">
-              QR ile gelen siparişleri takip etmek için sade bir ilk operasyon ekranı.
-              Ekip siparişleri alırken bu sayfayı açık tutabilir.
+              Gelen siparişleri takip edin, durumlarını güncelleyin ve ödeme bilgisini kontrol edin.
             </p>
             <div className="actions">
               <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">

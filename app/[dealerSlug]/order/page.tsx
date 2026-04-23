@@ -12,7 +12,14 @@ function getBrandStyle(primaryColor: string | null): CSSProperties | undefined {
     return undefined;
   }
 
-  return { "--color-primary": primaryColor } as CSSProperties;
+  return {
+    "--color-primary": primaryColor,
+    "--color-primary-strong": primaryColor,
+    "--color-primary-soft": `color-mix(in srgb, ${primaryColor} 10%, white)`,
+    "--color-primary-softer": `color-mix(in srgb, ${primaryColor} 6%, white)`,
+    "--color-primary-border": `color-mix(in srgb, ${primaryColor} 38%, transparent)`,
+    "--color-primary-shadow": `color-mix(in srgb, ${primaryColor} 20%, transparent)`
+  } as CSSProperties;
 }
 
 export default async function DealerOrderPage({
@@ -47,7 +54,7 @@ export default async function DealerOrderPage({
               <img src={dealer.logoUrl} alt={`${dealer.name} logosu`} className="dealer-logo" />
             ) : null}
             <div>
-              <h1>{dealer.name}</h1>
+              <h1>{dealer.name} Online Şubesine Hoş Geldiniz</h1>
               <p className="lead">
                 Su ve içecek siparişinizi birkaç dokunuşla verin. Önce ürünlerinizi seçin,
                 sonra telefon numaranızla kayıtlı adresinizi hızlıca kontrol edelim.

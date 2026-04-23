@@ -140,10 +140,9 @@ export function OrdersManager({ dealerSlug, initialOrders }: Props) {
     <section className="panel stack">
       <div>
         <span className="kicker">Gelen siparişler</span>
-        <h2>Bugünün görünen sipariş listesi</h2>
+        <h2>Sipariş listesi</h2>
         <p className="caption">
-          MVP demosu için okunabilir olacak şekilde hazırlandı: kim sipariş verdi, ne aldı,
-          nasıl ödeyecek, toplam tutar ve siparişin son durumu.
+          Müşteri, adres, ürün, ödeme ve durum bilgilerini tek ekranda takip edin.
         </p>
       </div>
 

@@ -54,6 +54,7 @@ export async function updateCompanyBranding(
   input: {
     logoUrl: string | null;
     primaryColor: string | null;
+    orderLeadTimeMinutes: number;
   }
 ) {
   const company = await db.company.update({
@@ -62,7 +63,8 @@ export async function updateCompanyBranding(
     },
     data: {
       logoUrl: input.logoUrl,
-      primaryColor: input.primaryColor
+      primaryColor: input.primaryColor,
+      orderLeadTimeMinutes: input.orderLeadTimeMinutes
     }
   });
 
