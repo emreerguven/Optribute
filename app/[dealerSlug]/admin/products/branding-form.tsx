@@ -9,6 +9,8 @@ type Props = {
   dealerSlug: string;
   initialLogoUrl: string;
   initialHeroImageUrl: string;
+  initialDepotName: string;
+  initialDepotAddress: string;
   initialPrimaryColor: string;
   initialLeadTimeMinutes: number;
 };
@@ -28,12 +30,16 @@ export function BrandingForm({
   dealerSlug,
   initialLogoUrl,
   initialHeroImageUrl,
+  initialDepotName,
+  initialDepotAddress,
   initialPrimaryColor,
   initialLeadTimeMinutes
 }: Props) {
   const router = useRouter();
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
   const [heroImageUrl, setHeroImageUrl] = useState(initialHeroImageUrl);
+  const [depotName, setDepotName] = useState(initialDepotName);
+  const [depotAddress, setDepotAddress] = useState(initialDepotAddress);
   const [primaryColor, setPrimaryColor] = useState(initialPrimaryColor || COLOR_PRESETS[0]);
   const [leadTimeMinutes, setLeadTimeMinutes] = useState(String(initialLeadTimeMinutes));
   const [message, setMessage] = useState<string | null>(null);
@@ -53,6 +59,8 @@ export function BrandingForm({
         body: JSON.stringify({
           logoUrl,
           heroImageUrl,
+          depotName,
+          depotAddress,
           primaryColor,
           orderLeadTimeMinutes: Number(leadTimeMinutes)
         })
@@ -66,6 +74,8 @@ export function BrandingForm({
 
       setLogoUrl(payload.company.logoUrl ?? "");
       setHeroImageUrl(payload.company.heroImageUrl ?? "");
+      setDepotName(payload.company.depotName ?? "");
+      setDepotAddress(payload.company.depotAddress ?? "");
       setPrimaryColor(payload.company.primaryColor ?? COLOR_PRESETS[0]);
       setLeadTimeMinutes(String(payload.company.orderLeadTimeMinutes));
       setMessage("Bayi görünümü güncellendi.");
@@ -111,6 +121,27 @@ export function BrandingForm({
               placeholder="https://... veya /banner.svg"
               disabled={isSaving}
             />
+          </label>
+
+          <label>
+            Depo adı
+            <input
+              value={depotName}
+              onChange={(event) => setDepotName(event.target.value)}
+              placeholder="Örn. Merkez depo"
+              disabled={isSaving}
+            />
+          </label>
+
+          <label className="product-form-wide">
+            Depo konumu
+            <input
+              value={depotAddress}
+              onChange={(event) => setDepotAddress(event.target.value)}
+              placeholder="100. Yıl Mah. 1526. Cad. No: 12 Çankaya / Ankara"
+              disabled={isSaving}
+            />
+            <span className="caption">Kurye rotaları bu adresten başlasın.</span>
           </label>
 
           <label>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeStructuredAddress } from "@/src/lib/address";
 import { requireAdminApi } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import {
@@ -21,12 +22,43 @@ function isOrderSource(value: unknown): value is NonNullable<OrderDraft["source"
   return typeof value === "string" && ORDER_SOURCES.some((source) => source === value);
 }
 
+function parseDeliveryAddress(value: unknown): OrderDraft["deliveryAddress"] {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (!isRecord(value)) {
+    throw new Error("delivery_address is invalid");
+  }
+
+  const parsed = {
+    district: typeof value.district === "string" ? value.district : undefined,
+    neighborhood: typeof value.neighborhood === "string" ? value.neighborhood : undefined,
+    street: typeof value.street === "string" ? value.street : undefined,
+    buildingNo: typeof value.buildingNo === "string" ? value.buildingNo : undefined,
+    apartmentNo: typeof value.apartmentNo === "string" ? value.apartmentNo : undefined,
+    siteName: typeof value.siteName === "string" ? value.siteName : undefined,
+    addressNote: typeof value.addressNote === "string" ? value.addressNote : undefined
+  };
+
+  return parsed;
+}
+
 function parseOrderDraft(body: unknown): OrderDraft {
   if (!isRecord(body)) {
     throw new Error("Request body must be a JSON object");
   }
 
-  const { phone, fullName, addressLine, notes, items, payment_method: paymentMethod, source } = body;
+  const {
+    phone,
+    fullName,
+    addressLine,
+    notes,
+    items,
+    payment_method: paymentMethod,
+    source,
+    delivery_address: deliveryAddress
+  } = body;
 
   if (typeof phone !== "string" || !phone.trim()) {
     throw new Error("Phone is required");
@@ -36,8 +68,8 @@ function parseOrderDraft(body: unknown): OrderDraft {
     throw new Error("Full name is required");
   }
 
-  if (typeof addressLine !== "string" || !addressLine.trim()) {
-    throw new Error("Address line is required");
+  if (addressLine !== undefined && typeof addressLine !== "string") {
+    throw new Error("Address line is invalid");
   }
 
   if (!isPaymentMethod(paymentMethod)) {
@@ -50,6 +82,16 @@ function parseOrderDraft(body: unknown): OrderDraft {
 
   if (source !== undefined && !isOrderSource(source)) {
     throw new Error("source is invalid");
+  }
+
+  const parsedDeliveryAddress = parseDeliveryAddress(deliveryAddress);
+  const normalizedAddress = normalizeStructuredAddress({
+    addressLine: typeof addressLine === "string" ? addressLine : undefined,
+    ...parsedDeliveryAddress
+  });
+
+  if (!normalizedAddress.addressLine) {
+    throw new Error("Address line is required");
   }
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -84,7 +126,8 @@ function parseOrderDraft(body: unknown): OrderDraft {
   return {
     phone,
     fullName,
-    addressLine,
+    addressLine: normalizedAddress.addressLine,
+    deliveryAddress: parsedDeliveryAddress,
     paymentMethod,
     source: source ?? "qr",
     notes,

@@ -1066,6 +1066,18 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.structured-address-panel {
+  padding: 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--card-border);
+}
+
+.structured-address-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
 .manual-products {
   padding: 1rem;
   border-radius: 20px;
@@ -1218,6 +1230,35 @@ textarea {
 .delivery-form-grid {
   display: grid;
   gap: 0.85rem;
+}
+
+.route-stop-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.route-stop-card {
+  border-style: dashed;
+}
+
+.route-stop-order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(17, 35, 31, 0.08);
+}
+
+.inline-link {
+  color: var(--color-primary-strong);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.inline-link:hover {
+  text-decoration: underline;
 }
 
 .warning {
@@ -1437,6 +1478,10 @@ textarea {
   }
 
   .delivery-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .structured-address-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

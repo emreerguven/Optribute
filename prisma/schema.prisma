@@ -57,6 +57,8 @@ model Company {
   supportPhone         String?
   logoUrl              String?
   heroImageUrl         String?
+  depotName            String?
+  depotAddress         String?
   primaryColor         String?
   currency             String    @default("TRY")
   orderLeadTimeMinutes Int       @default(45)
@@ -169,6 +171,12 @@ model CustomerAddress {
   label      String?
   line1      String
   district   String?
+  neighborhood String?
+  street     String?
+  buildingNo String?
+  apartmentNo String?
+  siteName   String?
+  addressNote String?
   city       String?
   isDefault  Boolean  @default(false)
   createdAt  DateTime @default(now())
@@ -189,6 +197,13 @@ model Order {
   phone            String
   normalizedPhone  String
   addressLine      String
+  district         String?
+  neighborhood     String?
+  street           String?
+  buildingNo       String?
+  apartmentNo      String?
+  siteName         String?
+  addressNote      String?
   deliveryNotes    String?
   status           OrderStatus @default(PENDING)
   deliveryStatus   DeliveryStatus @default(UNASSIGNED)

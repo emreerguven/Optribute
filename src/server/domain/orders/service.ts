@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { normalizeStructuredAddress } from "@/src/lib/address";
 import {
   DeliveryStatus as PrismaDeliveryStatus,
   OrderStatus as PrismaOrderStatus,
@@ -195,6 +196,13 @@ function toOrder(order: {
   customerName: string;
   phone: string;
   addressLine: string;
+  district: string | null;
+  neighborhood: string | null;
+  street: string | null;
+  buildingNo: string | null;
+  apartmentNo: string | null;
+  siteName: string | null;
+  addressNote: string | null;
   deliveryNotes: string | null;
   status: PrismaOrderStatus;
   deliveryStatus: PrismaDeliveryStatus;
@@ -223,6 +231,16 @@ function toOrder(order: {
     customerName: order.customerName,
     phone: order.phone,
     addressLine: order.addressLine,
+    deliveryAddress: {
+      addressLine: order.addressLine,
+      district: order.district,
+      neighborhood: order.neighborhood,
+      street: order.street,
+      buildingNo: order.buildingNo,
+      apartmentNo: order.apartmentNo,
+      siteName: order.siteName,
+      addressNote: order.addressNote
+    },
     status: toOrderStatus(order.status),
     source: toOrderSource(order.source),
     deliveryStatus: toDeliveryStatus(order.deliveryStatus),
@@ -253,6 +271,8 @@ function toCompany(company: {
   supportPhone: string | null;
   logoUrl: string | null;
   heroImageUrl: string | null;
+  depotName: string | null;
+  depotAddress: string | null;
   primaryColor: string | null;
   currency: string;
   orderLeadTimeMinutes: number;
@@ -265,6 +285,8 @@ function toCompany(company: {
     supportPhone: company.supportPhone,
     logoUrl: company.logoUrl,
     heroImageUrl: company.heroImageUrl,
+    depotName: company.depotName,
+    depotAddress: company.depotAddress,
     primaryColor: company.primaryColor,
     currency: company.currency,
     orderLeadTimeMinutes: company.orderLeadTimeMinutes
@@ -280,6 +302,8 @@ function toOrderPaymentSnapshot(order: Parameters<typeof toOrder>[0] & {
     supportPhone: string | null;
     logoUrl: string | null;
     heroImageUrl: string | null;
+    depotName: string | null;
+    depotAddress: string | null;
     primaryColor: string | null;
     currency: string;
     orderLeadTimeMinutes: number;
@@ -315,6 +339,38 @@ export async function listOrdersForCompany(companyId: string) {
       },
       {
         createdAt: "desc"
+      }
+    ]
+  });
+
+  return orders.map(toOrder);
+}
+
+export async function listOrdersForCourier(companyId: string, courierId: string) {
+  const orders = await db.order.findMany({
+    where: {
+      companyId,
+      courierId
+    },
+    include: {
+      courier: true,
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    },
+    orderBy: [
+      {
+        deliveryStatus: "asc"
+      },
+      {
+        submittedAt: "desc"
       }
     ]
   });
@@ -467,7 +523,11 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
   const fullName = draft.fullName.trim();
   const phone = draft.phone.trim();
   const normalizedPhone = normalizePhone(phone);
-  const addressLine = draft.addressLine.trim();
+  const normalizedAddress = normalizeStructuredAddress({
+    addressLine: draft.addressLine,
+    ...draft.deliveryAddress
+  });
+  const addressLine = normalizedAddress.addressLine;
   const items = draft.items.filter((item) => item.quantity > 0);
   const uniqueProductIds = [...new Set(items.map((item) => item.productId))];
 
@@ -483,6 +543,7 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         phone,
         fullName,
         addressLine,
+        deliveryAddress: normalizedAddress,
         notes: draft.notes
       },
       tx
@@ -533,6 +594,13 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         phone: customer.phone,
         normalizedPhone,
         addressLine,
+        district: normalizedAddress.district,
+        neighborhood: normalizedAddress.neighborhood,
+        street: normalizedAddress.street,
+        buildingNo: normalizedAddress.buildingNo,
+        apartmentNo: normalizedAddress.apartmentNo,
+        siteName: normalizedAddress.siteName,
+        addressNote: normalizedAddress.addressNote,
         deliveryNotes: draft.notes?.trim() || null,
         status: PrismaOrderStatus.PENDING,
         deliveryStatus: PrismaDeliveryStatus.UNASSIGNED,

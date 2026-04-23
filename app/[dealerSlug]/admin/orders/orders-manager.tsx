@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
+import { formatAddressMeta, normalizeStructuredAddress, type StructuredAddressInput } from "@/src/lib/address";
 import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
 import type {
@@ -21,12 +23,14 @@ type Props = {
   products: Product[];
   campaigns: Campaign[];
   couriers: Courier[];
+  initialCourierFilter?: string;
 };
 
 type ManualOrderForm = {
   phone: string;
   fullName: string;
   addressLine: string;
+  deliveryAddress: StructuredAddressInput;
   notes: string;
   paymentMethod: PaymentMethod;
 };
@@ -49,6 +53,7 @@ type LookupPayload = {
     fullName: string;
     phone: string;
     addressLine: string;
+    deliveryAddress?: StructuredAddressInput | null;
     notes?: string | null;
   };
   error?: string;
@@ -58,6 +63,15 @@ const EMPTY_MANUAL_FORM: ManualOrderForm = {
   phone: "",
   fullName: "",
   addressLine: "",
+  deliveryAddress: {
+    district: "",
+    neighborhood: "",
+    street: "",
+    buildingNo: "",
+    apartmentNo: "",
+    siteName: "",
+    addressNote: ""
+  },
   notes: "",
   paymentMethod: "cash-on-delivery"
 };
@@ -205,7 +219,8 @@ export function OrdersManager({
   initialOrders,
   products,
   campaigns,
-  couriers
+  couriers,
+  initialCourierFilter = "all"
 }: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
@@ -223,8 +238,16 @@ export function OrdersManager({
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<DeliveryStatusFilter>("all");
-  const [courierFilter, setCourierFilter] = useState<CourierFilter>("all");
+  const [courierFilter, setCourierFilter] = useState<CourierFilter>(initialCourierFilter);
   const [sortOption, setSortOption] = useState<SortOption>("newest");
+  const manualAddressPreview = useMemo(
+    () =>
+      normalizeStructuredAddress({
+        addressLine: manualForm.addressLine,
+        ...manualForm.deliveryAddress
+      }),
+    [manualForm.addressLine, manualForm.deliveryAddress]
+  );
 
   const selectedManualItems = useMemo(
     () =>
@@ -368,6 +391,17 @@ export function OrdersManager({
         phone: payload.customer?.phone ?? current.phone,
         fullName: payload.customer?.fullName ?? current.fullName,
         addressLine: payload.customer?.addressLine ?? current.addressLine,
+        deliveryAddress: payload.customer?.deliveryAddress
+          ? {
+              district: payload.customer.deliveryAddress.district ?? "",
+              neighborhood: payload.customer.deliveryAddress.neighborhood ?? "",
+              street: payload.customer.deliveryAddress.street ?? "",
+              buildingNo: payload.customer.deliveryAddress.buildingNo ?? "",
+              apartmentNo: payload.customer.deliveryAddress.apartmentNo ?? "",
+              siteName: payload.customer.deliveryAddress.siteName ?? "",
+              addressNote: payload.customer.deliveryAddress.addressNote ?? ""
+            }
+          : current.deliveryAddress,
         notes: payload.customer?.notes ?? current.notes
       }));
       setLookupMessage("Müşteri bilgileri getirildi.");
@@ -384,8 +418,8 @@ export function OrdersManager({
     setCreateMessage(null);
     setMessage(null);
 
-    if (!manualForm.phone.trim() || !manualForm.fullName.trim() || !manualForm.addressLine.trim()) {
-      setCreateMessage("Telefon, ad soyad ve adres zorunludur.");
+    if (!manualForm.phone.trim() || !manualForm.fullName.trim() || !manualAddressPreview.addressLine) {
+      setCreateMessage("Telefon, ad soyad ve teslimat adresi zorunludur.");
       return;
     }
 
@@ -406,6 +440,7 @@ export function OrdersManager({
           phone: manualForm.phone,
           fullName: manualForm.fullName,
           addressLine: manualForm.addressLine,
+          delivery_address: manualForm.deliveryAddress,
           notes: manualForm.notes,
           payment_method: manualForm.paymentMethod,
           source: "manual",
@@ -656,16 +691,143 @@ export function OrdersManager({
                 placeholder="Müşteri adı"
               />
             </label>
-            <label className="manual-form-wide">
-              Adres
-              <textarea
-                value={manualForm.addressLine}
-                onChange={(event) =>
-                  setManualForm((current) => ({ ...current, addressLine: event.target.value }))
-                }
-                placeholder="Teslimat adresi"
-              />
-            </label>
+            <div className="manual-form-wide structured-address-panel stack compact-stack">
+              <div>
+                <span className="detail-label">Teslimat adresi</span>
+                <p className="caption">Yapısal alanları doldurun. Açık adres satırı opsiyoneldir.</p>
+              </div>
+              <div className="structured-address-grid">
+                <label>
+                  İlçe
+                  <input
+                    value={manualForm.deliveryAddress.district ?? ""}
+                    onChange={(event) =>
+                      setManualForm((current) => ({
+                        ...current,
+                        deliveryAddress: {
+                          ...current.deliveryAddress,
+                          district: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="Örn. Ümraniye"
+                  />
+                </label>
+                <label>
+                  Mahalle
+                  <input
+                    value={manualForm.deliveryAddress.neighborhood ?? ""}
+                    onChange={(event) =>
+                      setManualForm((current) => ({
+                        ...current,
+                        deliveryAddress: {
+                          ...current.deliveryAddress,
+                          neighborhood: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="Örn. Atatürk Mah."
+                  />
+                </label>
+                <label className="manual-form-wide">
+                  Cadde / Sokak
+                  <input
+                    value={manualForm.deliveryAddress.street ?? ""}
+                    onChange={(event) =>
+                      setManualForm((current) => ({
+                        ...current,
+                        deliveryAddress: {
+                          ...current.deliveryAddress,
+                          street: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="Örn. Çiçek Sok."
+                  />
+                </label>
+                <label>
+                  Bina no
+                  <input
+                    value={manualForm.deliveryAddress.buildingNo ?? ""}
+                    onChange={(event) =>
+                      setManualForm((current) => ({
+                        ...current,
+                        deliveryAddress: {
+                          ...current.deliveryAddress,
+                          buildingNo: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="12"
+                  />
+                </label>
+                <label>
+                  Daire no
+                  <input
+                    value={manualForm.deliveryAddress.apartmentNo ?? ""}
+                    onChange={(event) =>
+                      setManualForm((current) => ({
+                        ...current,
+                        deliveryAddress: {
+                          ...current.deliveryAddress,
+                          apartmentNo: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="4"
+                  />
+                </label>
+                <label className="manual-form-wide">
+                  Site / Apartman
+                  <input
+                    value={manualForm.deliveryAddress.siteName ?? ""}
+                    onChange={(event) =>
+                      setManualForm((current) => ({
+                        ...current,
+                        deliveryAddress: {
+                          ...current.deliveryAddress,
+                          siteName: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="Örn. Gülistan Sitesi"
+                  />
+                </label>
+                <label className="manual-form-wide">
+                  Adres notu
+                  <input
+                    value={manualForm.deliveryAddress.addressNote ?? ""}
+                    onChange={(event) =>
+                      setManualForm((current) => ({
+                        ...current,
+                        deliveryAddress: {
+                          ...current.deliveryAddress,
+                          addressNote: event.target.value
+                        }
+                      }))
+                    }
+                    placeholder="Kapı kodu, blok bilgisi vb."
+                  />
+                </label>
+                <label className="manual-form-wide">
+                  Açık adres satırı
+                  <textarea
+                    value={manualForm.addressLine}
+                    onChange={(event) =>
+                      setManualForm((current) => ({ ...current, addressLine: event.target.value }))
+                    }
+                    placeholder="İsterseniz açık adresi manuel yazın"
+                  />
+                </label>
+              </div>
+              <div className="summary-card compact-stack">
+                <span className="detail-label">Adres özeti</span>
+                <strong>{manualAddressPreview.addressLine || "Adres alanlarını doldurun"}</strong>
+                {formatAddressMeta(manualAddressPreview) ? (
+                  <span className="caption">{formatAddressMeta(manualAddressPreview)}</span>
+                ) : null}
+              </div>
+            </div>
             <label>
               Not
               <input
@@ -876,16 +1038,27 @@ export function OrdersManager({
                   </div>
                   <div className="detail-block">
                     <span className="detail-label">Kurye</span>
-                    <strong>{order.courier?.fullName ?? "Atanmadı"}</strong>
-                    <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
-                      {deliveryStatusLabel(order.deliveryStatus)}
-                    </span>
-                  </div>
-                  <div className="detail-block detail-block-wide">
-                    <span className="detail-label">Adres</span>
-                    <strong>{order.addressLine}</strong>
-                  </div>
-                </div>
+                        <strong>{order.courier?.fullName ?? "Atanmadı"}</strong>
+                        <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
+                          {deliveryStatusLabel(order.deliveryStatus)}
+                        </span>
+                        {order.courier ? (
+                          <Link href={`/${dealerSlug}/admin/couriers/${order.courier.id}`} className="inline-link">
+                            Listeyi aç
+                          </Link>
+                        ) : null}
+                      </div>
+                      <div className="detail-block detail-block-wide">
+                        <span className="detail-label">Adres</span>
+                        <strong>{order.addressLine}</strong>
+                        {formatAddressMeta(order.deliveryAddress) ? (
+                          <span className="caption">{formatAddressMeta(order.deliveryAddress)}</span>
+                        ) : null}
+                        {order.deliveryAddress.addressNote ? (
+                          <span className="caption">{order.deliveryAddress.addressNote}</span>
+                        ) : null}
+                      </div>
+                    </div>
 
                 <div className="summary-card stack compact-stack">
                   <div className="detail-label">Ürün özeti</div>

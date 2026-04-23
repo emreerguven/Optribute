@@ -31,6 +31,8 @@ function parseBrandingInput(body: unknown) {
 
   const logoUrl = normalizeOptionalText(body.logoUrl, "Logo bağlantısı");
   const heroImageUrl = normalizeOptionalText(body.heroImageUrl, "Hero görsel bağlantısı");
+  const depotName = normalizeOptionalText(body.depotName, "Depo adı");
+  const depotAddress = normalizeOptionalText(body.depotAddress, "Depo konumu");
   const primaryColor = normalizeOptionalText(body.primaryColor, "Ana renk");
   const orderLeadTimeMinutes = body.orderLeadTimeMinutes;
 
@@ -50,6 +52,8 @@ function parseBrandingInput(body: unknown) {
   return {
     logoUrl,
     heroImageUrl,
+    depotName,
+    depotAddress,
     primaryColor,
     orderLeadTimeMinutes
   };
@@ -86,6 +90,8 @@ export async function PATCH(
     revalidatePath(`/${dealer.slug}/order`);
     revalidatePath(`/${dealer.slug}/order/success`);
     revalidatePath(`/${dealer.slug}/admin/products`);
+    revalidatePath(`/${dealer.slug}/admin/orders`);
+    revalidatePath(`/${dealer.slug}/admin/couriers`);
     return NextResponse.json({ ok: true, company });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Bayi görünümü güncellenemedi";

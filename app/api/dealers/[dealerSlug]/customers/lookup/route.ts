@@ -37,6 +37,17 @@ export async function GET(
       fullName: customer.fullName,
       phone: customer.phone,
       addressLine: defaultAddress?.line1 ?? "",
+      deliveryAddress: defaultAddress
+        ? {
+            district: defaultAddress.district,
+            neighborhood: defaultAddress.neighborhood,
+            street: defaultAddress.street,
+            buildingNo: defaultAddress.buildingNo,
+            apartmentNo: defaultAddress.apartmentNo,
+            siteName: defaultAddress.siteName,
+            addressNote: defaultAddress.addressNote
+          }
+        : null,
       notes: customer.notes
     }
   });

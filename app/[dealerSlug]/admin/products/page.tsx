@@ -69,6 +69,8 @@ export default async function DealerProductsAdminPage({
         dealerSlug={dealer.slug}
         initialLogoUrl={dealer.logoUrl ?? ""}
         initialHeroImageUrl={dealer.heroImageUrl ?? ""}
+        initialDepotName={dealer.depotName ?? ""}
+        initialDepotAddress={dealer.depotAddress ?? ""}
         initialPrimaryColor={dealer.primaryColor ?? ""}
         initialLeadTimeMinutes={dealer.orderLeadTimeMinutes}
       />

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Courier } from "@/src/server/domain/types";
 
@@ -257,6 +258,12 @@ export function CouriersManager({ dealerSlug, initialCouriers }: Props) {
                       </div>
 
                       <div className="actions">
+                        <Link
+                          href={`/${dealerSlug}/admin/couriers/${courier.id}`}
+                          className="button-secondary admin-inline-button"
+                        >
+                          Teslimat listesi
+                        </Link>
                         <button type="submit" className="button admin-inline-button" disabled={isUpdating}>
                           {isUpdating ? "Güncelleniyor..." : "Kaydet"}
                         </button>
@@ -272,6 +279,12 @@ export function CouriersManager({ dealerSlug, initialCouriers }: Props) {
                     </form>
                   ) : (
                     <div className="actions">
+                      <Link
+                        href={`/${dealerSlug}/admin/couriers/${courier.id}`}
+                        className="button-secondary admin-inline-button"
+                      >
+                        Teslimat listesi
+                      </Link>
                       <button type="button" className="button-secondary admin-inline-button" onClick={() => beginEdit(courier)}>
                         Düzenle
                       </button>

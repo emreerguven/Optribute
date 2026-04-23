@@ -9,6 +9,8 @@ function toCompany(company: {
   supportPhone: string | null;
   logoUrl: string | null;
   heroImageUrl: string | null;
+  depotName: string | null;
+  depotAddress: string | null;
   primaryColor: string | null;
   currency: string;
   orderLeadTimeMinutes: number;
@@ -21,6 +23,8 @@ function toCompany(company: {
     supportPhone: company.supportPhone,
     logoUrl: company.logoUrl,
     heroImageUrl: company.heroImageUrl,
+    depotName: company.depotName,
+    depotAddress: company.depotAddress,
     primaryColor: company.primaryColor,
     currency: company.currency,
     orderLeadTimeMinutes: company.orderLeadTimeMinutes
@@ -56,6 +60,8 @@ export async function updateCompanyBranding(
   input: {
     logoUrl: string | null;
     heroImageUrl: string | null;
+    depotName: string | null;
+    depotAddress: string | null;
     primaryColor: string | null;
     orderLeadTimeMinutes: number;
   }
@@ -67,6 +73,8 @@ export async function updateCompanyBranding(
     data: {
       logoUrl: input.logoUrl,
       heroImageUrl: input.heroImageUrl,
+      depotName: input.depotName,
+      depotAddress: input.depotAddress,
       primaryColor: input.primaryColor,
       orderLeadTimeMinutes: input.orderLeadTimeMinutes
     }

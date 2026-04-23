@@ -38,6 +38,17 @@ export async function listCouriersForCompany(companyId: string) {
   return couriers.map(toCourier);
 }
 
+export async function getCourierForCompany(companyId: string, courierId: string) {
+  const courier = await db.courier.findFirst({
+    where: {
+      companyId,
+      id: courierId
+    }
+  });
+
+  return courier ? toCourier(courier) : null;
+}
+
 export async function createCourierForCompany(
   companyId: string,
   input: {

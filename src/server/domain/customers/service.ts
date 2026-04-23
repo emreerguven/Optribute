@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { normalizeStructuredAddress, type StructuredAddressInput } from "@/src/lib/address";
 import { db, type DbClient } from "@/src/server/db";
 import { normalizePhone } from "@/src/server/domain/phone";
 import type { Customer } from "@/src/server/domain/types";
@@ -19,6 +20,12 @@ function toCustomer(customer: {
     label: string | null;
     line1: string;
     district: string | null;
+    neighborhood: string | null;
+    street: string | null;
+    buildingNo: string | null;
+    apartmentNo: string | null;
+    siteName: string | null;
+    addressNote: string | null;
     city: string | null;
     isDefault: boolean;
   }>;
@@ -78,7 +85,8 @@ export async function upsertCustomerForOrder(
     companyId: string;
     phone: string;
     fullName: string;
-    addressLine: string;
+    addressLine?: string;
+    deliveryAddress?: StructuredAddressInput;
     notes?: string;
   },
   client: DbClient = db
@@ -86,7 +94,11 @@ export async function upsertCustomerForOrder(
   const normalizedPhone = normalizePhone(input.phone);
   const fullName = input.fullName.trim();
   const phone = input.phone.trim();
-  const addressLine = input.addressLine.trim();
+  const normalizedAddress = normalizeStructuredAddress({
+    addressLine: input.addressLine,
+    ...input.deliveryAddress
+  });
+  const addressLine = normalizedAddress.addressLine;
 
   if (!normalizedPhone || !fullName || !addressLine) {
     throw new Error("Customer details are incomplete");
@@ -131,6 +143,13 @@ export async function upsertCustomerForOrder(
       },
       data: {
         line1: addressLine,
+        district: normalizedAddress.district,
+        neighborhood: normalizedAddress.neighborhood,
+        street: normalizedAddress.street,
+        buildingNo: normalizedAddress.buildingNo,
+        apartmentNo: normalizedAddress.apartmentNo,
+        siteName: normalizedAddress.siteName,
+        addressNote: normalizedAddress.addressNote,
         label: existingDefaultAddress.label ?? "Primary",
         isDefault: true
       }
@@ -142,6 +161,13 @@ export async function upsertCustomerForOrder(
         customerId: customer.id,
         label: "Primary",
         line1: addressLine,
+        district: normalizedAddress.district,
+        neighborhood: normalizedAddress.neighborhood,
+        street: normalizedAddress.street,
+        buildingNo: normalizedAddress.buildingNo,
+        apartmentNo: normalizedAddress.apartmentNo,
+        siteName: normalizedAddress.siteName,
+        addressNote: normalizedAddress.addressNote,
         isDefault: true
       }
     });

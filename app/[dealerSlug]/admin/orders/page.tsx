@@ -14,11 +14,14 @@ import { OrdersManager } from "./orders-manager";
 export const dynamic = "force-dynamic";
 
 export default async function DealerOrdersAdminPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ dealerSlug: string }>;
+  searchParams: Promise<{ courier?: string }>;
 }) {
   const { dealerSlug } = await params;
+  const { courier } = await searchParams;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {
@@ -83,6 +86,7 @@ export default async function DealerOrdersAdminPage({
         products={products}
         campaigns={campaigns}
         couriers={couriers}
+        initialCourierFilter={courier ?? "all"}
       />
     </main>
   );

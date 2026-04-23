@@ -1,3 +1,5 @@
+import type { StructuredAddress, StructuredAddressInput } from "@/src/lib/address";
+
 export type ProductCategory = "water" | "soft-drink" | "bundle";
 export type OrderStatus =
   | "pending"
@@ -32,6 +34,8 @@ export type Company = {
   supportPhone: string | null;
   logoUrl: string | null;
   heroImageUrl: string | null;
+  depotName: string | null;
+  depotAddress: string | null;
   primaryColor: string | null;
   currency: string;
   orderLeadTimeMinutes: number;
@@ -81,6 +85,12 @@ export type CustomerAddress = {
   label: string | null;
   line1: string;
   district: string | null;
+  neighborhood: string | null;
+  street: string | null;
+  buildingNo: string | null;
+  apartmentNo: string | null;
+  siteName: string | null;
+  addressNote: string | null;
   city: string | null;
   isDefault: boolean;
 };
@@ -127,6 +137,7 @@ export type Order = {
   customerName: string;
   phone: string;
   addressLine: string;
+  deliveryAddress: StructuredAddress;
   status: OrderStatus;
   source: OrderSource;
   deliveryStatus: DeliveryStatus;
@@ -144,7 +155,8 @@ export type OrderPaymentSnapshot = Order & {
 export type OrderDraft = {
   phone: string;
   fullName: string;
-  addressLine: string;
+  addressLine?: string;
+  deliveryAddress?: StructuredAddressInput;
   paymentMethod: PaymentMethod;
   source?: OrderSource;
   notes?: string;
