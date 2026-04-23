@@ -38,7 +38,7 @@ export default async function DealerOrderPage({
     <main className="shell order-shell stack" style={brandStyle}>
       <section className="hero hero-compact stack">
         <div className="inline-meta">
-          <span className="kicker">QR sipariş sayfası</span>
+          <span className="kicker">Online sipariş</span>
           <span className="pill">{dealer.city ?? "Su teslimatı"}</span>
         </div>
         <div className="stack compact-copy">

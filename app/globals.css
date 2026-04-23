@@ -92,7 +92,8 @@ main {
 }
 
 .hero-compact {
-  padding: 1.25rem;
+  gap: 0.85rem;
+  padding: 1.1rem;
 }
 
 .hero-grid,
@@ -158,7 +159,7 @@ h3 {
 }
 
 h1 {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.65rem;
   font-size: clamp(2.4rem, 6vw, 4.4rem);
   line-height: 0.94;
 }
@@ -200,7 +201,7 @@ h3 {
 }
 
 .compact-copy {
-  gap: 0.9rem;
+  gap: 0.75rem;
 }
 
 .actions,
@@ -304,6 +305,15 @@ button:disabled {
   background: var(--color-primary-soft);
   color: var(--color-primary-strong);
   width: fit-content;
+}
+
+.success-hero {
+  gap: 0.72rem;
+  padding: 1rem 1.1rem;
+}
+
+.success-hero h1 {
+  font-size: clamp(2.25rem, 5vw, 3.6rem);
 }
 
 .phone-row {
@@ -494,20 +504,29 @@ textarea {
 
 .dealer-brand-row {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.dealer-brand-row > div {
+  min-width: 0;
+}
+
+.dealer-brand-row h1,
+.dealer-brand-row .lead {
+  margin-bottom: 0;
 }
 
 .dealer-logo {
-  width: 68px;
-  height: 68px;
+  width: 62px;
+  height: 62px;
   flex: 0 0 auto;
-  border-radius: 20px;
+  border-radius: 18px;
   object-fit: contain;
-  padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.86);
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(17, 35, 31, 0.08);
-  box-shadow: 0 10px 22px rgba(17, 35, 31, 0.08);
+  box-shadow: 0 8px 18px rgba(17, 35, 31, 0.07);
 }
 
 .campaign-edit-form {
@@ -825,8 +844,12 @@ textarea {
   }
 
   .dealer-brand-row {
-    align-items: flex-start;
-    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .dealer-logo {
+    width: 56px;
+    height: 56px;
   }
 
   .product-admin-main {

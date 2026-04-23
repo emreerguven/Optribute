@@ -63,6 +63,16 @@ function getBrandStyle(primaryColor: string | null): CSSProperties | undefined {
   return { "--color-primary": primaryColor } as CSSProperties;
 }
 
+function formatOrderReference(orderId: string) {
+  const normalized = orderId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+  if (!normalized) {
+    return "";
+  }
+
+  return `#${normalized.slice(-5).padStart(5, "0")}`;
+}
+
 export default async function OrderSuccessPage({
   params,
   searchParams
@@ -85,11 +95,12 @@ export default async function OrderSuccessPage({
   const paymentStatus = readValue(query.paymentStatus);
   const itemCount = Number(readValue(query.itemCount, "0"));
   const statusCopy = paymentStatusCopy(paymentStatus);
+  const orderReference = orderId ? formatOrderReference(orderId) : "";
   const brandStyle = getBrandStyle(dealer.primaryColor);
 
   return (
     <main className="shell success-shell stack" style={brandStyle}>
-      <section className="hero hero-compact stack">
+      <section className="hero hero-compact success-hero stack">
         <div className="success-badge">{statusCopy.badge}</div>
         <div className="stack compact-copy">
           <div className="dealer-brand-row">
@@ -106,7 +117,7 @@ export default async function OrderSuccessPage({
             </div>
           </div>
           <div className="tag-row">
-            {orderId ? <span className="status">Sipariş no: {orderId}</span> : null}
+            {orderReference ? <span className="status">Sipariş no: {orderReference}</span> : null}
             <span className="delivery-pill">Tahmini teslimat: {dealer.orderLeadTimeMinutes} dk</span>
           </div>
         </div>
