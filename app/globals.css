@@ -587,6 +587,27 @@ textarea {
   transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
+.campaign-summary-compact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.campaign-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.campaign-compact-details {
+  padding: 0.8rem 0.95rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(17, 35, 31, 0.08);
+}
+
 .campaign-admin-card-editing {
   border-color: var(--color-primary-border);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), var(--color-primary-softer));
@@ -1355,6 +1376,18 @@ textarea {
   }
 
   .admin-section-header {
+    flex-direction: column;
+  }
+
+  .campaign-summary-compact,
+  .order-summary-main {
+    flex-direction: column;
+  }
+
+  .campaign-summary-actions,
+  .order-summary-meta {
+    width: 100%;
+    justify-content: stretch;
     flex-direction: column;
   }
 

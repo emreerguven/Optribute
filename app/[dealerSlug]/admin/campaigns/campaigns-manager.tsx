@@ -267,6 +267,7 @@ function CampaignFormFields({
 export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Props) {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [expandedCampaignIds, setExpandedCampaignIds] = useState<string[]>([]);
   const [form, setForm] = useState<CampaignFormState>(() => createEmptyForm(products));
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [editingForm, setEditingForm] = useState<CampaignFormState>(() => createEmptyForm(products));
@@ -300,6 +301,17 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
     setEditingCampaignId(campaign.id);
     setEditingForm(formFromCampaign(campaign, products));
     setMessage(null);
+    setExpandedCampaignIds((current) =>
+      current.includes(campaign.id) ? current : [...current, campaign.id]
+    );
+  }
+
+  function toggleCampaignExpanded(campaignId: string) {
+    setExpandedCampaignIds((current) =>
+      current.includes(campaignId)
+        ? current.filter((id) => id !== campaignId)
+        : [...current, campaignId]
+    );
   }
 
   async function handleCreateCampaign(event: React.FormEvent<HTMLFormElement>) {
@@ -450,10 +462,12 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
       </section>
 
       <section className="panel stack">
-        <div>
+        <div className="admin-section-header">
+          <div>
           <span className="kicker">Kampanya listesi</span>
           <h2>Mevcut kampanyalar</h2>
-          <p className="caption">Aynı siparişte tek kampanya uygulanır.</p>
+          <p className="caption">Kampanyaları hızlıca gözden geçirin ve gerektiğinde düzenleyin.</p>
+          </div>
         </div>
 
         {sortedCampaigns.length === 0 ? (
@@ -463,6 +477,7 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
             {sortedCampaigns.map((campaign) => {
               const isStatusUpdating = activeCampaignId === campaign.id;
               const isEditing = editingCampaignId === campaign.id;
+              const isExpanded = expandedCampaignIds.includes(campaign.id);
               const wasRecentlyUpdated = recentlyUpdatedCampaignId === campaign.id;
 
               return (
@@ -472,7 +487,7 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
                     isEditing ? "campaign-admin-card-editing" : ""
                   } ${wasRecentlyUpdated ? "campaign-admin-card-updated" : ""}`}
                 >
-                  <div className="product-admin-topline">
+                  <div className="campaign-summary-compact">
                     <div className="stack compact-stack">
                       <div className="tag-row">
                         {isEditing ? (
@@ -492,7 +507,15 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
                       </div>
                     </div>
 
-                    <div className="order-actions">
+                    <div className="campaign-summary-actions">
+                      <button
+                        type="button"
+                        className="button-secondary admin-inline-button"
+                        onClick={() => toggleCampaignExpanded(campaign.id)}
+                        disabled={isStatusUpdating || isUpdating}
+                      >
+                        {isExpanded ? "Detayları gizle" : "Detayları aç"}
+                      </button>
                       <button
                         type="button"
                         className="button-secondary admin-inline-button"
@@ -517,6 +540,19 @@ export function CampaignsManager({ dealerSlug, initialCampaigns, products }: Pro
                       </button>
                     </div>
                   </div>
+
+                  {isExpanded ? (
+                    <div className="campaign-compact-details stack compact-stack">
+                      <div className="summary-row">
+                        <span>Tip</span>
+                        <strong>{campaignTypeLabel(campaign.type)}</strong>
+                      </div>
+                      <div className="summary-row">
+                        <span>Durum</span>
+                        <strong>{campaign.isActive ? "Aktif" : "Pasif"}</strong>
+                      </div>
+                    </div>
+                  ) : null}
 
                   {isEditing ? (
                     <form className="stack campaign-edit-form" onSubmit={handleUpdateCampaign}>
