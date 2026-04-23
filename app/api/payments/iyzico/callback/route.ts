@@ -24,8 +24,14 @@ async function readToken(request: Request) {
 
 function redirectToOrderResult(request: Request, params: Record<string, string>) {
   const url = new URL(request.url);
+  const appBaseUrl = process.env.APP_BASE_URL;
+
+  if (!appBaseUrl) {
+    throw new Error("APP_BASE_URL is required for iyzico callback redirects");
+  }
+
   const dealerSlug = params.dealerSlug || url.searchParams.get("dealerSlug") || "javsu";
-  const redirectUrl = new URL(`/${dealerSlug}/order/success`, url.origin);
+  const redirectUrl = new URL(`/${dealerSlug}/order/success`, appBaseUrl);
 
   for (const [key, value] of Object.entries(params)) {
     redirectUrl.searchParams.set(key, value);
