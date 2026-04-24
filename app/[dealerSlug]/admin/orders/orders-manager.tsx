@@ -7,6 +7,7 @@ import {
   buildMapQuery,
   formatAddressMeta,
   normalizeStructuredAddress,
+  shouldShowAddressQualityWarning,
   type AddressQualityStatus,
   type StructuredAddressInput
 } from "@/src/lib/address";
@@ -318,10 +319,6 @@ function addressQualityClass(status: AddressQualityStatus) {
   }
 }
 
-function shouldShowAddressQualityFlag(status: AddressQualityStatus) {
-  return status !== "verified";
-}
-
 export function OrdersManager({
   dealerSlug,
   dealerCity = null,
@@ -497,6 +494,27 @@ export function OrdersManager({
 
     return null;
   }, [deliveryStatusFilter, sourceFilter]);
+  const hasActiveFilters = useMemo(
+    () =>
+      Boolean(searchTerm) ||
+      statusFilter !== "all" ||
+      paymentStatusFilter !== "all" ||
+      sourceFilter !== "all" ||
+      deliveryStatusFilter !== "all" ||
+      courierFilter !== "all" ||
+      todayOnly ||
+      sortOption !== "newest",
+    [
+      courierFilter,
+      deliveryStatusFilter,
+      paymentStatusFilter,
+      searchTerm,
+      sortOption,
+      sourceFilter,
+      statusFilter,
+      todayOnly
+    ]
+  );
 
   function updateManualQuantity(productId: string, value: number) {
     setManualQuantities((current) => ({
@@ -590,6 +608,17 @@ export function OrdersManager({
 
     setSourceFilter(preset);
     setDeliveryStatusFilter("all");
+  }
+
+  function resetFilters() {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setPaymentStatusFilter("all");
+    setSourceFilter("all");
+    setDeliveryStatusFilter("all");
+    setCourierFilter("all");
+    setTodayOnly(false);
+    setSortOption("newest");
   }
 
   async function handleCustomerLookup() {
@@ -959,7 +988,7 @@ export function OrdersManager({
             Bugün
           </button>
         </div>
-        <label>
+        <label className={`filter-field ${searchTerm ? "filter-field-active" : ""}`}>
           Arama
           <input
             type="search"
@@ -968,7 +997,7 @@ export function OrdersManager({
             placeholder="Ad veya telefon"
           />
         </label>
-        <label>
+        <label className={`filter-field ${statusFilter !== "all" ? "filter-field-active" : ""}`}>
           Sipariş durumu
           <select
             value={statusFilter}
@@ -981,7 +1010,7 @@ export function OrdersManager({
             <option value="cancelled">İptal</option>
           </select>
         </label>
-        <label>
+        <label className={`filter-field ${paymentStatusFilter !== "all" ? "filter-field-active" : ""}`}>
           Ödeme durumu
           <select
             value={paymentStatusFilter}
@@ -994,7 +1023,7 @@ export function OrdersManager({
             <option value="cancelled">İptal</option>
           </select>
         </label>
-        <label>
+        <label className={`filter-field ${sourceFilter !== "all" ? "filter-field-active" : ""}`}>
           Kaynak
           <select
             value={sourceFilter}
@@ -1005,7 +1034,7 @@ export function OrdersManager({
             <option value="manual">Manuel</option>
           </select>
         </label>
-        <label>
+        <label className={`filter-field ${deliveryStatusFilter !== "all" ? "filter-field-active" : ""}`}>
           Teslimat
           <select
             value={deliveryStatusFilter}
@@ -1019,7 +1048,7 @@ export function OrdersManager({
             ))}
           </select>
         </label>
-        <label>
+        <label className={`filter-field ${courierFilter !== "all" ? "filter-field-active" : ""}`}>
           Kurye
           <select
             value={courierFilter}
@@ -1033,7 +1062,7 @@ export function OrdersManager({
             ))}
           </select>
         </label>
-        <label>
+        <label className={`filter-field ${sortOption !== "newest" ? "filter-field-active" : ""}`}>
           Sıralama
           <select value={sortOption} onChange={(event) => setSortOption(event.target.value as SortOption)}>
             <option value="newest">En yeni</option>
@@ -1043,6 +1072,9 @@ export function OrdersManager({
           </select>
         </label>
         <div className="dispatch-selection-row">
+          {hasActiveFilters ? (
+            <span className="active-filter-indicator">Filtreli görünüm</span>
+          ) : null}
           <button
             type="button"
             className="button-secondary admin-inline-button"
@@ -1060,6 +1092,14 @@ export function OrdersManager({
             Seçimi temizle
           </button>
           <span className="caption">{selectedOrderIds.length} sipariş seçili</span>
+          <button
+            type="button"
+            className="button-secondary admin-inline-button"
+            onClick={resetFilters}
+            disabled={!hasActiveFilters}
+          >
+            Filtreleri sıfırla
+          </button>
         </div>
         {selectedOrderIds.length > 0 ? (
           <div className="bulk-action-bar">
@@ -1534,7 +1574,7 @@ export function OrdersManager({
                       {deliveryStatusLabel(order.deliveryStatus)}
                     </span>
                     <span className="pill">{order.courier?.fullName ?? "Kurye yok"}</span>
-                    {shouldShowAddressQualityFlag(order.addressQualityStatus) ? (
+                    {shouldShowAddressQualityWarning(order.addressQualityStatus) ? (
                       <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
                         {addressQualityLabel(order.addressQualityStatus)}
                       </span>
@@ -1583,10 +1623,14 @@ export function OrdersManager({
                       <div className="detail-block detail-block-wide">
                         <span className="detail-label">Adres</span>
                         <strong>{order.addressLine}</strong>
-                        <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
-                          {addressQualityLabel(order.addressQualityStatus)}
-                        </span>
-                        <span className="caption">{addressQualityHint(order.addressQualityStatus)}</span>
+                        {shouldShowAddressQualityWarning(order.addressQualityStatus) ? (
+                          <>
+                            <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
+                              {addressQualityLabel(order.addressQualityStatus)}
+                            </span>
+                            <span className="caption">{addressQualityHint(order.addressQualityStatus)}</span>
+                          </>
+                        ) : null}
                         {formatAddressMeta(order.deliveryAddress) ? (
                           <span className="caption">{formatAddressMeta(order.deliveryAddress)}</span>
                         ) : null}

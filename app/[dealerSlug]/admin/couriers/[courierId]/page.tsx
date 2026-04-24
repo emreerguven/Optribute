@@ -6,6 +6,7 @@ import {
   buildMapQuery,
   buildWhatsAppRouteShareUrl,
   formatAddressMeta,
+  shouldShowAddressQualityWarning,
   type AddressQualityStatus
 } from "@/src/lib/address";
 import { getDealerBrandStyle } from "@/src/lib/branding";
@@ -98,10 +99,6 @@ function addressQualityClass(status: AddressQualityStatus) {
     default:
       return "address-quality-partial";
   }
-}
-
-function shouldShowAddressQualityFlag(status: AddressQualityStatus) {
-  return status !== "verified";
 }
 
 export default async function CourierWorklistPage({
@@ -284,7 +281,7 @@ export default async function CourierWorklistPage({
                       <div>
                         <strong>{order.customerName}</strong>
                         <p className="caption">{order.phone}</p>
-                        {shouldShowAddressQualityFlag(order.addressQualityStatus) ? (
+                        {shouldShowAddressQualityWarning(order.addressQualityStatus) ? (
                           <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
                             {addressQualityLabel(order.addressQualityStatus)}
                           </span>
@@ -341,9 +338,11 @@ export default async function CourierWorklistPage({
                         <div className="detail-block detail-block-wide">
                           <span className="detail-label">Teslimat adresi</span>
                           <strong>{order.addressLineNormalized ?? order.addressLine}</strong>
-                          <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
-                            {addressQualityLabel(order.addressQualityStatus)}
-                          </span>
+                          {shouldShowAddressQualityWarning(order.addressQualityStatus) ? (
+                            <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
+                              {addressQualityLabel(order.addressQualityStatus)}
+                            </span>
+                          ) : null}
                           {order.deliveryAddress.addressNote ? (
                             <span className="caption">{order.deliveryAddress.addressNote}</span>
                           ) : null}

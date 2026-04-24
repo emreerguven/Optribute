@@ -288,6 +288,10 @@ export function determineAddressQuality(
   return "failed";
 }
 
+export function shouldShowAddressQualityWarning(status: AddressQualityStatus) {
+  return status === "failed";
+}
+
 export function deriveAddressSnapshot(
   input?: StructuredAddressInput | null,
   options?: {
