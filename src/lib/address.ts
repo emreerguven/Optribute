@@ -121,6 +121,26 @@ function normalizeWhatsAppPhone(phone: string) {
   return digits;
 }
 
+function containsNeighborhoodSignal(value: string) {
+  return /\bMahallesi\b/iu.test(value);
+}
+
+function containsStreetSignal(value: string) {
+  return /\b(Caddesi|Sokak|Bulvarı)\b/iu.test(value);
+}
+
+function containsBuildingSignal(value: string) {
+  return /\bNo:\s*[0-9A-Za-z/-]+\b/iu.test(value);
+}
+
+function containsSiteSignal(value: string) {
+  return /\b(Sitesi|Plaza|İş Merkezi)\b/iu.test(value);
+}
+
+function containsNoteHeavySignal(value: string) {
+  return /\b(zil|interkom|kapı|güvenlik|blok|daire|kat|tarif|giriş|kod)\b/iu.test(value);
+}
+
 export function hasStructuredAddressParts(input?: StructuredAddressInput | null) {
   if (!input) {
     return false;
@@ -225,11 +245,17 @@ export function determineAddressQuality(
   }
 
   const hasDistrict = Boolean(cleanOptionalText(address.district));
-  const hasNeighborhood = Boolean(cleanOptionalText(address.neighborhood));
-  const hasStreet = Boolean(cleanOptionalText(address.street)) || /\b(Caddesi|Sokak|Bulvarı)\b/iu.test(normalizedLine);
-  const hasBuilding = Boolean(cleanOptionalText(address.buildingNo)) || /\bNo:\s*[0-9A-Za-z/-]+\b/iu.test(normalizedLine);
-  const hasSite = Boolean(cleanOptionalText(address.siteName)) || /\b(Sitesi|Apartmanı|Plaza|İş Merkezi)\b/iu.test(normalizedLine);
+  const hasNeighborhood =
+    Boolean(cleanOptionalText(address.neighborhood)) || containsNeighborhoodSignal(normalizedLine);
+  const hasStreet =
+    Boolean(cleanOptionalText(address.street)) || containsStreetSignal(normalizedLine);
+  const hasBuilding =
+    Boolean(cleanOptionalText(address.buildingNo)) || containsBuildingSignal(normalizedLine);
+  const hasSite =
+    Boolean(cleanOptionalText(address.siteName)) || containsSiteSignal(normalizedLine);
   const hasCity = Boolean(options?.city) ? includesToken(normalizedLine, options?.city ?? "") : false;
+  const isVeryShort = normalizedLine.length < 18;
+  const isNoteHeavy = containsNoteHeavySignal(normalizedLine) && !hasStreet && !hasBuilding;
   const score =
     Number(hasDistrict) +
     Number(hasNeighborhood) +
@@ -238,11 +264,24 @@ export function determineAddressQuality(
     Number(hasSite) +
     Number(hasCity);
 
+  if (isNoteHeavy || (isVeryShort && !hasStreet && !hasNeighborhood)) {
+    return "failed";
+  }
+
+  if (hasStreet && hasBuilding && hasNeighborhood) {
+    return "verified";
+  }
+
   if ((hasStreet && hasBuilding && (hasDistrict || hasNeighborhood)) || score >= 5) {
     return "verified";
   }
 
-  if ((hasStreet && (hasDistrict || hasNeighborhood)) || (normalizedLine.length >= 18 && score >= 3)) {
+  if (
+    (hasStreet && (hasDistrict || hasNeighborhood) && normalizedLine.length >= 18) ||
+    (hasStreet && hasBuilding) ||
+    (hasNeighborhood && hasStreet && hasCity) ||
+    (normalizedLine.length >= 24 && score >= 3)
+  ) {
     return "partial";
   }
 

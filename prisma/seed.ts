@@ -144,7 +144,6 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       street: "1526. Cad.",
       buildingNo: "14",
       apartmentNo: "6",
-      siteName: "Lale Apartmanı",
       addressNote: "İnterkom bozuksa arayın."
     }
   },
@@ -159,8 +158,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Bahçelievler",
       street: "7. Cad.",
       buildingNo: "58",
-      apartmentNo: "2",
-      siteName: "Beyaz İş Merkezi"
+      apartmentNo: "2"
     }
   },
   {
@@ -174,8 +172,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Balgat",
       street: "Ziyabey Cad.",
       buildingNo: "41",
-      apartmentNo: "5",
-      siteName: "Gün Apartmanı"
+      apartmentNo: "5"
     }
   },
   {
@@ -188,8 +185,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Emek",
       street: "8. Cad.",
       buildingNo: "22",
-      apartmentNo: "4",
-      siteName: "Park Evleri"
+      apartmentNo: "4"
     }
   },
   {
@@ -203,8 +199,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Ayrancı",
       street: "Hoşdere Cad.",
       buildingNo: "91",
-      apartmentNo: "9",
-      siteName: "Ayrancı Konakları"
+      apartmentNo: "9"
     }
   },
   {
@@ -217,8 +212,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Kızılay",
       street: "Meşrutiyet Cad.",
       buildingNo: "17",
-      apartmentNo: "3",
-      siteName: "Kent İş Hanı"
+      apartmentNo: "3"
     }
   },
   {
@@ -232,8 +226,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Yukarı Bahçelievler",
       street: "Aşkabat Cad.",
       buildingNo: "29",
-      apartmentNo: "1",
-      siteName: "Sedef Apartmanı"
+      apartmentNo: "1"
     }
   },
   {
@@ -246,8 +239,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "100. Yıl",
       street: "1514. Sok.",
       buildingNo: "8",
-      apartmentNo: "7",
-      siteName: "Arma Sitesi"
+      apartmentNo: "7"
     }
   },
   {
@@ -261,8 +253,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Bahçelievler",
       street: "3. Cad.",
       buildingNo: "73",
-      apartmentNo: "10",
-      siteName: "Defne Apartmanı"
+      apartmentNo: "10"
     }
   },
   {
@@ -275,8 +266,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Balgat",
       street: "Ceyhun Atuf Kansu Cad.",
       buildingNo: "126",
-      apartmentNo: "4",
-      siteName: "Plaza B"
+      apartmentNo: "4"
     }
   },
   {
@@ -289,8 +279,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Ayrancı",
       street: "Güfte Sok.",
       buildingNo: "11",
-      apartmentNo: "2",
-      siteName: "Meltem Apartmanı"
+      apartmentNo: "2"
     }
   },
   {
@@ -303,8 +292,7 @@ const JAVSU_CUSTOMERS: CustomerSeed[] = [
       neighborhood: "Emek",
       street: "Bişkek Cad.",
       buildingNo: "33",
-      apartmentNo: "8",
-      siteName: "Yonca Sitesi"
+      apartmentNo: "8"
     }
   }
 ];
@@ -320,8 +308,7 @@ const MANUAL_CONTACTS: ManualContactSeed[] = [
       neighborhood: "Kızılay",
       street: "Selanik Cad.",
       buildingNo: "19",
-      apartmentNo: "5",
-      siteName: "Koru Apartmanı"
+      apartmentNo: "5"
     }
   },
   {
@@ -333,8 +320,7 @@ const MANUAL_CONTACTS: ManualContactSeed[] = [
       neighborhood: "Bahçelievler",
       street: "Aşkabat Cad.",
       buildingNo: "41",
-      apartmentNo: "1",
-      siteName: "Ofis 41"
+      apartmentNo: "1"
     }
   },
   {
@@ -347,8 +333,7 @@ const MANUAL_CONTACTS: ManualContactSeed[] = [
       neighborhood: "Yukarı Bahçelievler",
       street: "İzmir 2 Cad.",
       buildingNo: "27",
-      apartmentNo: "6",
-      siteName: "Mavi Evler"
+      apartmentNo: "6"
     }
   },
   {
@@ -360,8 +345,7 @@ const MANUAL_CONTACTS: ManualContactSeed[] = [
       neighborhood: "100. Yıl",
       street: "1582. Cad.",
       buildingNo: "6",
-      apartmentNo: "3",
-      siteName: "Park Yaşam"
+      apartmentNo: "3"
     }
   },
   {
@@ -373,8 +357,7 @@ const MANUAL_CONTACTS: ManualContactSeed[] = [
       neighborhood: "Ayrancı",
       street: "Portakal Çiçeği Sok.",
       buildingNo: "23",
-      apartmentNo: "4",
-      siteName: "Sarı Apartman"
+      apartmentNo: "4"
     }
   }
 ];
