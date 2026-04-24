@@ -169,17 +169,7 @@ main {
 
 .admin-brand-header {
   position: relative;
-  overflow: hidden;
   padding: 1rem 1.1rem;
-}
-
-.admin-brand-header-media {
-  position: absolute;
-  inset: 0;
-  background-position: center;
-  background-size: cover;
-  opacity: 0.82;
-  pointer-events: none;
 }
 
 .admin-brand-header-inner {
@@ -198,20 +188,31 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
-  padding: 0.45rem 0.7rem;
+  min-width: min(100%, 28rem);
+  max-width: 100%;
+  padding: 0.42rem 0.7rem 0.42rem 0.42rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid var(--color-primary-border);
   backdrop-filter: blur(14px);
 }
 
-.admin-brand-logo {
-  width: 46px;
-  height: 46px;
+.admin-brand-identity {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.admin-brand-visual {
+  flex: 0 0 auto;
+  width: 5.4rem;
+  height: 3.3rem;
   border-radius: 14px;
   object-fit: cover;
+  object-position: center;
   border: 1px solid var(--card-border);
   background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 20px rgba(17, 35, 31, 0.08);
 }
 
 .admin-brand-logo-fallback {
@@ -226,8 +227,8 @@ main {
   justify-content: flex-end;
 }
 
-.admin-brand-grid {
-  align-items: end;
+.admin-brand-copy {
+  min-width: 0;
 }
 
 .hero-compact {
@@ -1142,21 +1143,21 @@ textarea {
 }
 
 .admin-console-shell {
-  gap: 0.85rem;
+  gap: 0.65rem;
 }
 
 .admin-console-toolbar,
 .manual-customer-grid {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.65rem;
 }
 
 .admin-console-toolbar-sticky {
   position: sticky;
   top: 0.75rem;
   z-index: 10;
-  padding: 0.85rem;
-  border-radius: 20px;
+  padding: 0.7rem;
+  border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.82)),
     var(--color-primary-softer);
@@ -1177,13 +1178,13 @@ textarea {
 .dispatch-preset-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.4rem;
 }
 
 .dispatch-preset-chip {
   border: 1px solid rgba(17, 35, 31, 0.1);
   border-radius: 999px;
-  padding: 0.42rem 0.82rem;
+  padding: 0.36rem 0.72rem;
   background: rgba(255, 255, 255, 0.72);
   color: var(--muted);
   font-weight: 700;
@@ -1381,8 +1382,8 @@ textarea {
 }
 
 .delivery-panel {
-  padding: 1rem;
-  border-radius: 20px;
+  padding: 0.85rem;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--card-border);
 }
@@ -1394,7 +1395,7 @@ textarea {
 
 .order-summary-compact {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.55rem;
 }
 
 .order-select-checkbox {
@@ -1414,29 +1415,29 @@ textarea {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.7rem;
 }
 
 .order-summary-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.65rem;
+  gap: 0.45rem;
 }
 
 .compact-meta-item {
   display: grid;
   gap: 0.15rem;
-  min-width: 132px;
-  padding: 0.65rem 0.8rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.66);
+  min-width: 108px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.52);
   border: 1px solid rgba(17, 35, 31, 0.08);
 }
 
 .order-summary-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .order-card-selected {
@@ -1445,6 +1446,32 @@ textarea {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.78)),
     var(--color-primary-softer);
+}
+
+.address-quality {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.34rem 0.72rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.address-quality-verified {
+  color: #0f5132;
+  background: rgba(15, 118, 110, 0.13);
+}
+
+.address-quality-partial {
+  color: #9a6700;
+  background: rgba(245, 158, 11, 0.16);
+}
+
+.address-quality-failed {
+  color: var(--danger);
+  background: rgba(194, 65, 12, 0.12);
 }
 
 .route-stop-list {
@@ -1527,6 +1554,52 @@ textarea {
   color: var(--danger);
 }
 
+@media (min-width: 900px) {
+  .admin-console-toolbar-wide {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .admin-order-list {
+    gap: 0.55rem;
+  }
+
+  .admin-order-list .order-card {
+    padding: 0.72rem 0.82rem;
+    border-radius: 18px;
+  }
+
+  .order-summary-compact {
+    grid-template-columns: auto minmax(220px, 1.3fr) minmax(180px, 0.8fr) minmax(0, 1.6fr) auto;
+    align-items: center;
+  }
+
+  .order-summary-main > div:first-child h3 {
+    margin-bottom: 0.12rem;
+    font-size: 1rem;
+  }
+
+  .order-summary-main > div:first-child .caption {
+    margin-bottom: 0;
+  }
+
+  .order-summary-meta {
+    justify-content: flex-start;
+  }
+
+  .compact-meta-item {
+    min-width: 94px;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .order-summary-tags {
+    align-items: center;
+  }
+
+  .order-summary-compact > .actions {
+    justify-content: flex-end;
+  }
+}
+
 .footer-text {
   text-align: center;
   color: var(--muted);
@@ -1556,6 +1629,16 @@ textarea {
   .admin-brand-header-topline {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .admin-brand-chip {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-brand-visual {
+    width: 4.8rem;
+    height: 3rem;
   }
 
   .admin-console-head {

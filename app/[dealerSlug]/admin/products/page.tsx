@@ -38,7 +38,7 @@ export default async function DealerProductsAdminPage({
         actions={
           <>
             <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
-              Dashboard
+              Yönetim paneli
             </Link>
             <Link href={`/${dealer.slug}/admin/orders`} className="button-secondary">
               Siparişleri gör

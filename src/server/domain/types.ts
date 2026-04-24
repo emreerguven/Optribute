@@ -1,4 +1,8 @@
-import type { StructuredAddress, StructuredAddressInput } from "@/src/lib/address";
+import type {
+  AddressQualityStatus,
+  StructuredAddress,
+  StructuredAddressInput
+} from "@/src/lib/address";
 
 export type ProductCategory = "water" | "soft-drink" | "bundle";
 export type OrderStatus =
@@ -84,6 +88,9 @@ export type CustomerAddress = {
   id: string;
   label: string | null;
   line1: string;
+  line1Raw: string | null;
+  line1Normalized: string | null;
+  addressQualityStatus: AddressQualityStatus;
   district: string | null;
   neighborhood: string | null;
   street: string | null;
@@ -137,6 +144,9 @@ export type Order = {
   customerName: string;
   phone: string;
   addressLine: string;
+  addressLineRaw: string | null;
+  addressLineNormalized: string | null;
+  addressQualityStatus: AddressQualityStatus;
   deliveryAddress: StructuredAddress;
   status: OrderStatus;
   source: OrderSource;

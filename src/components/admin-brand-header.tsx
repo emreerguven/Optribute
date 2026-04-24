@@ -11,37 +11,37 @@ type Props = {
 };
 
 export function AdminBrandHeader({ dealer, kicker, title, description, actions, summary }: Props) {
+  const visualUrl = dealer.heroImageUrl ?? dealer.logoUrl;
+
   return (
     <section className="admin-brand-header panel stack">
-      {dealer.heroImageUrl ? (
-        <div
-          className="admin-brand-header-media"
-          style={{
-            backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.94), rgba(255,255,255,0.84)), url(${dealer.heroImageUrl})`
-          }}
-        />
-      ) : null}
-
       <div className="admin-brand-header-inner stack">
         <div className="admin-brand-header-topline">
           <div className="admin-brand-chip">
-            {dealer.logoUrl ? (
-              <img src={dealer.logoUrl} alt={`${dealer.name} logosu`} className="admin-brand-logo" />
+            {visualUrl ? (
+              <img
+                src={visualUrl}
+                alt={`${dealer.name} görseli`}
+                className="admin-brand-visual"
+              />
             ) : (
-              <div className="admin-brand-logo admin-brand-logo-fallback" aria-hidden="true">
+              <div className="admin-brand-visual admin-brand-logo-fallback" aria-hidden="true">
                 {dealer.name.slice(0, 1)}
               </div>
             )}
-            <div className="stack-tight">
-              <strong>{dealer.name}</strong>
-              <span className="caption">{dealer.city ?? "Bayi paneli"}</span>
+
+            <div className="admin-brand-identity">
+              <div className="stack-tight">
+                <strong>{dealer.name}</strong>
+                <span className="caption">{dealer.city ?? "Bayi paneli"}</span>
+              </div>
             </div>
           </div>
 
           {actions ? <div className="actions admin-brand-actions">{actions}</div> : null}
         </div>
 
-        <div className="hero-grid admin-brand-grid">
+        <div className="stack admin-brand-copy">
           <div>
             <span className="kicker">{kicker}</span>
             <h1>{title}</h1>

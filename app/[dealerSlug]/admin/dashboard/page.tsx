@@ -133,7 +133,7 @@ export default async function DealerDashboardPage({
       <AdminBrandHeader
         dealer={dealer}
         kicker="Genel görünüm"
-        title="Dashboard"
+        title="Yönetim paneli"
         description="Bugünkü sipariş akışını, ödeme görünümünü ve kurye yükünü tek ekranda izleyin."
         actions={
           <>

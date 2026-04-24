@@ -62,7 +62,7 @@ export default async function DealerOrdersAdminPage({
         actions={
           <>
             <Link href={`/${dealer.slug}/admin/dashboard`} className="button-secondary">
-              Dashboard
+              Yönetim paneli
             </Link>
             <Link href={`/${dealer.slug}/admin/products`} className="button-secondary">
               Ürünleri yönet
@@ -92,6 +92,7 @@ export default async function DealerOrdersAdminPage({
 
       <OrdersManager
         dealerSlug={dealer.slug}
+        dealerCity={dealer.city}
         initialOrders={orders}
         products={products}
         campaigns={campaigns}

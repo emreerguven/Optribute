@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { normalizeStructuredAddress } from "@/src/lib/address";
+import { deriveAddressSnapshot } from "@/src/lib/address";
 import { requireAdminApi } from "@/src/server/auth/guards";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import {
@@ -44,7 +44,7 @@ function parseDeliveryAddress(value: unknown): OrderDraft["deliveryAddress"] {
   return parsed;
 }
 
-function parseOrderDraft(body: unknown): OrderDraft {
+function parseOrderDraft(body: unknown, city?: string | null): OrderDraft {
   if (!isRecord(body)) {
     throw new Error("Request body must be a JSON object");
   }
@@ -85,12 +85,12 @@ function parseOrderDraft(body: unknown): OrderDraft {
   }
 
   const parsedDeliveryAddress = parseDeliveryAddress(deliveryAddress);
-  const normalizedAddress = normalizeStructuredAddress({
+  const addressSnapshot = deriveAddressSnapshot({
     addressLine: typeof addressLine === "string" ? addressLine : undefined,
     ...parsedDeliveryAddress
-  });
+  }, { city });
 
-  if (!normalizedAddress.addressLine) {
+  if (!addressSnapshot.normalizedAddressLine) {
     throw new Error("Address line is required");
   }
 
@@ -126,7 +126,7 @@ function parseOrderDraft(body: unknown): OrderDraft {
   return {
     phone,
     fullName,
-    addressLine: normalizedAddress.addressLine,
+    addressLine: typeof addressLine === "string" ? addressLine : undefined,
     deliveryAddress: parsedDeliveryAddress,
     paymentMethod,
     source: source ?? "qr",
@@ -155,7 +155,7 @@ export async function POST(
   }
 
   try {
-    const draft = parseOrderDraft(body);
+    const draft = parseOrderDraft(body, dealer.city);
 
     if (draft.source === "manual") {
       const authError = await requireAdminApi(dealer.id);

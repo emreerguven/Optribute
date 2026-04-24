@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { normalizeStructuredAddress } from "@/src/lib/address";
+import { deriveAddressSnapshot, type AddressQualityStatus, type StructuredAddressInput } from "@/src/lib/address";
 import {
+  AddressQualityStatus as PrismaAddressQualityStatus,
   DeliveryStatus as PrismaDeliveryStatus,
   OrderStatus as PrismaOrderStatus,
   PaymentMethod as PrismaPaymentMethod,
@@ -104,6 +105,18 @@ function toDeliveryStatus(status: PrismaDeliveryStatus): DeliveryStatus {
   throw new Error(`Unsupported delivery status: ${exhaustiveStatus}`);
 }
 
+function toAddressQualityStatus(status: PrismaAddressQualityStatus): AddressQualityStatus {
+  switch (status) {
+    case PrismaAddressQualityStatus.VERIFIED:
+      return "verified";
+    case PrismaAddressQualityStatus.FAILED:
+      return "failed";
+    case PrismaAddressQualityStatus.PARTIAL:
+    default:
+      return "partial";
+  }
+}
+
 function toPrismaPaymentMethod(method: PaymentMethod): PrismaPaymentMethod {
   switch (method) {
     case "cash-on-delivery":
@@ -154,6 +167,18 @@ function toPrismaOrderStatus(status: OrderStatus): PrismaOrderStatus {
   throw new Error(`Unsupported order status: ${exhaustiveStatus}`);
 }
 
+function toPrismaAddressQualityStatus(status: AddressQualityStatus): PrismaAddressQualityStatus {
+  switch (status) {
+    case "verified":
+      return PrismaAddressQualityStatus.VERIFIED;
+    case "failed":
+      return PrismaAddressQualityStatus.FAILED;
+    case "partial":
+    default:
+      return PrismaAddressQualityStatus.PARTIAL;
+  }
+}
+
 function toOrderSource(source: string): OrderSource {
   return source === "manual" ? "manual" : "qr";
 }
@@ -196,6 +221,9 @@ function toOrder(order: {
   customerName: string;
   phone: string;
   addressLine: string;
+  addressLineRaw: string | null;
+  addressLineNormalized: string | null;
+  addressQualityStatus: PrismaAddressQualityStatus;
   district: string | null;
   neighborhood: string | null;
   street: string | null;
@@ -231,6 +259,9 @@ function toOrder(order: {
     customerName: order.customerName,
     phone: order.phone,
     addressLine: order.addressLine,
+    addressLineRaw: order.addressLineRaw,
+    addressLineNormalized: order.addressLineNormalized,
+    addressQualityStatus: toAddressQualityStatus(order.addressQualityStatus),
     deliveryAddress: {
       addressLine: order.addressLine,
       district: order.district,
@@ -523,27 +554,45 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
   const fullName = draft.fullName.trim();
   const phone = draft.phone.trim();
   const normalizedPhone = normalizePhone(phone);
-  const normalizedAddress = normalizeStructuredAddress({
-    addressLine: draft.addressLine,
-    ...draft.deliveryAddress
-  });
-  const addressLine = normalizedAddress.addressLine;
   const items = draft.items.filter((item) => item.quantity > 0);
   const uniqueProductIds = [...new Set(items.map((item) => item.productId))];
 
-  if (!normalizedPhone || !fullName || !addressLine || items.length === 0) {
+  if (!normalizedPhone || !fullName || items.length === 0) {
     throw new Error("Missing required order fields");
   }
 
   return db.$transaction(async (tx) => {
     const orderId = `ord_${randomUUID()}`;
+    const company = await tx.company.findUnique({
+      where: {
+        id: companyId
+      },
+      select: {
+        city: true
+      }
+    });
+    const addressSnapshot = deriveAddressSnapshot(
+      {
+        addressLine: draft.addressLine,
+        ...draft.deliveryAddress
+      },
+      {
+        city: company?.city
+      }
+    );
+
+    if (!addressSnapshot.normalizedAddressLine) {
+      throw new Error("Missing required order fields");
+    }
+
     const customer = await upsertCustomerForOrder(
       {
         companyId,
         phone,
         fullName,
-        addressLine,
-        deliveryAddress: normalizedAddress,
+        addressLine: addressSnapshot.rawAddressLine,
+        deliveryAddress: addressSnapshot.structuredAddress,
+        city: company?.city,
         notes: draft.notes
       },
       tx
@@ -593,14 +642,17 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         customerName: customer.fullName,
         phone: customer.phone,
         normalizedPhone,
-        addressLine,
-        district: normalizedAddress.district,
-        neighborhood: normalizedAddress.neighborhood,
-        street: normalizedAddress.street,
-        buildingNo: normalizedAddress.buildingNo,
-        apartmentNo: normalizedAddress.apartmentNo,
-        siteName: normalizedAddress.siteName,
-        addressNote: normalizedAddress.addressNote,
+        addressLine: addressSnapshot.normalizedAddressLine,
+        addressLineRaw: addressSnapshot.rawAddressLine,
+        addressLineNormalized: addressSnapshot.normalizedAddressLine,
+        addressQualityStatus: toPrismaAddressQualityStatus(addressSnapshot.qualityStatus),
+        district: addressSnapshot.structuredAddress.district,
+        neighborhood: addressSnapshot.structuredAddress.neighborhood,
+        street: addressSnapshot.structuredAddress.street,
+        buildingNo: addressSnapshot.structuredAddress.buildingNo,
+        apartmentNo: addressSnapshot.structuredAddress.apartmentNo,
+        siteName: addressSnapshot.structuredAddress.siteName,
+        addressNote: addressSnapshot.structuredAddress.addressNote,
         deliveryNotes: draft.notes?.trim() || null,
         status: PrismaOrderStatus.PENDING,
         deliveryStatus: PrismaDeliveryStatus.UNASSIGNED,
@@ -642,6 +694,130 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
     });
 
     return toOrder(order);
+  });
+}
+
+export async function updateOrderAddressForCompany(
+  companyId: string,
+  orderId: string,
+  input: {
+    addressLine?: string;
+    deliveryAddress?: StructuredAddressInput;
+  }
+) {
+  const existingOrder = await db.order.findFirst({
+    where: {
+      id: orderId,
+      companyId
+    },
+    include: {
+      courier: true,
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    }
+  });
+
+  if (!existingOrder) {
+    throw new Error("Sipariş bulunamadı");
+  }
+
+  return db.$transaction(async (tx) => {
+    const company = await tx.company.findUnique({
+      where: {
+        id: companyId
+      },
+      select: {
+        city: true
+      }
+    });
+    const addressSnapshot = deriveAddressSnapshot(
+      {
+        addressLine: input.addressLine,
+        ...input.deliveryAddress
+      },
+      {
+        city: company?.city
+      }
+    );
+
+    if (!addressSnapshot.normalizedAddressLine) {
+      throw new Error("Teslimat adresi zorunludur");
+    }
+
+    const updatedOrder = await tx.order.update({
+      where: {
+        id: existingOrder.id
+      },
+      data: {
+        addressLine: addressSnapshot.normalizedAddressLine,
+        addressLineRaw: addressSnapshot.rawAddressLine,
+        addressLineNormalized: addressSnapshot.normalizedAddressLine,
+        addressQualityStatus: toPrismaAddressQualityStatus(addressSnapshot.qualityStatus),
+        district: addressSnapshot.structuredAddress.district,
+        neighborhood: addressSnapshot.structuredAddress.neighborhood,
+        street: addressSnapshot.structuredAddress.street,
+        buildingNo: addressSnapshot.structuredAddress.buildingNo,
+        apartmentNo: addressSnapshot.structuredAddress.apartmentNo,
+        siteName: addressSnapshot.structuredAddress.siteName,
+        addressNote: addressSnapshot.structuredAddress.addressNote
+      },
+      include: {
+        courier: true,
+        orderItems: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        },
+        payments: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
+
+    if (existingOrder.customerId) {
+      const defaultAddress = await tx.customerAddress.findFirst({
+        where: {
+          customerId: existingOrder.customerId,
+          isDefault: true
+        },
+        orderBy: {
+          createdAt: "asc"
+        }
+      });
+
+      if (defaultAddress) {
+        await tx.customerAddress.update({
+          where: {
+            id: defaultAddress.id
+          },
+          data: {
+            line1: addressSnapshot.normalizedAddressLine,
+            line1Raw: addressSnapshot.rawAddressLine,
+            line1Normalized: addressSnapshot.normalizedAddressLine,
+            addressQualityStatus: toPrismaAddressQualityStatus(addressSnapshot.qualityStatus),
+            district: addressSnapshot.structuredAddress.district,
+            neighborhood: addressSnapshot.structuredAddress.neighborhood,
+            street: addressSnapshot.structuredAddress.street,
+            buildingNo: addressSnapshot.structuredAddress.buildingNo,
+            apartmentNo: addressSnapshot.structuredAddress.apartmentNo,
+            siteName: addressSnapshot.structuredAddress.siteName,
+            addressNote: addressSnapshot.structuredAddress.addressNote
+          }
+        });
+      }
+    }
+
+    return toOrder(updatedOrder);
   });
 }
 

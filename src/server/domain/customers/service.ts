@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { normalizeStructuredAddress, type StructuredAddressInput } from "@/src/lib/address";
+import { deriveAddressSnapshot, type StructuredAddressInput } from "@/src/lib/address";
 import { db, type DbClient } from "@/src/server/db";
 import { normalizePhone } from "@/src/server/domain/phone";
 import type { Customer } from "@/src/server/domain/types";
@@ -15,13 +15,16 @@ function toCustomer(customer: {
   fullName: string;
   phone: string;
   notes: string | null;
-  addresses: Array<{
-    id: string;
-    label: string | null;
-    line1: string;
-    district: string | null;
-    neighborhood: string | null;
-    street: string | null;
+    addresses: Array<{
+      id: string;
+      label: string | null;
+      line1: string;
+      line1Raw: string | null;
+      line1Normalized: string | null;
+      addressQualityStatus: "VERIFIED" | "PARTIAL" | "FAILED";
+      district: string | null;
+      neighborhood: string | null;
+      street: string | null;
     buildingNo: string | null;
     apartmentNo: string | null;
     siteName: string | null;
@@ -36,7 +39,15 @@ function toCustomer(customer: {
     fullName: customer.fullName,
     phone: customer.phone,
     notes: customer.notes,
-    addresses: customer.addresses
+    addresses: customer.addresses.map((address) => ({
+      ...address,
+      addressQualityStatus:
+        address.addressQualityStatus === "VERIFIED"
+          ? "verified"
+          : address.addressQualityStatus === "FAILED"
+            ? "failed"
+            : "partial"
+    }))
   };
 }
 
@@ -87,6 +98,7 @@ export async function upsertCustomerForOrder(
     fullName: string;
     addressLine?: string;
     deliveryAddress?: StructuredAddressInput;
+    city?: string | null;
     notes?: string;
   },
   client: DbClient = db
@@ -94,11 +106,16 @@ export async function upsertCustomerForOrder(
   const normalizedPhone = normalizePhone(input.phone);
   const fullName = input.fullName.trim();
   const phone = input.phone.trim();
-  const normalizedAddress = normalizeStructuredAddress({
-    addressLine: input.addressLine,
-    ...input.deliveryAddress
-  });
-  const addressLine = normalizedAddress.addressLine;
+  const addressSnapshot = deriveAddressSnapshot(
+    {
+      addressLine: input.addressLine,
+      ...input.deliveryAddress
+    },
+    {
+      city: input.city
+    }
+  );
+  const addressLine = addressSnapshot.normalizedAddressLine;
 
   if (!normalizedPhone || !fullName || !addressLine) {
     throw new Error("Customer details are incomplete");
@@ -143,13 +160,21 @@ export async function upsertCustomerForOrder(
       },
       data: {
         line1: addressLine,
-        district: normalizedAddress.district,
-        neighborhood: normalizedAddress.neighborhood,
-        street: normalizedAddress.street,
-        buildingNo: normalizedAddress.buildingNo,
-        apartmentNo: normalizedAddress.apartmentNo,
-        siteName: normalizedAddress.siteName,
-        addressNote: normalizedAddress.addressNote,
+        line1Raw: addressSnapshot.rawAddressLine,
+        line1Normalized: addressSnapshot.normalizedAddressLine,
+        addressQualityStatus:
+          addressSnapshot.qualityStatus === "verified"
+            ? "VERIFIED"
+            : addressSnapshot.qualityStatus === "failed"
+              ? "FAILED"
+              : "PARTIAL",
+        district: addressSnapshot.structuredAddress.district,
+        neighborhood: addressSnapshot.structuredAddress.neighborhood,
+        street: addressSnapshot.structuredAddress.street,
+        buildingNo: addressSnapshot.structuredAddress.buildingNo,
+        apartmentNo: addressSnapshot.structuredAddress.apartmentNo,
+        siteName: addressSnapshot.structuredAddress.siteName,
+        addressNote: addressSnapshot.structuredAddress.addressNote,
         label: existingDefaultAddress.label ?? "Primary",
         isDefault: true
       }
@@ -161,13 +186,21 @@ export async function upsertCustomerForOrder(
         customerId: customer.id,
         label: "Primary",
         line1: addressLine,
-        district: normalizedAddress.district,
-        neighborhood: normalizedAddress.neighborhood,
-        street: normalizedAddress.street,
-        buildingNo: normalizedAddress.buildingNo,
-        apartmentNo: normalizedAddress.apartmentNo,
-        siteName: normalizedAddress.siteName,
-        addressNote: normalizedAddress.addressNote,
+        line1Raw: addressSnapshot.rawAddressLine,
+        line1Normalized: addressSnapshot.normalizedAddressLine,
+        addressQualityStatus:
+          addressSnapshot.qualityStatus === "verified"
+            ? "VERIFIED"
+            : addressSnapshot.qualityStatus === "failed"
+              ? "FAILED"
+              : "PARTIAL",
+        district: addressSnapshot.structuredAddress.district,
+        neighborhood: addressSnapshot.structuredAddress.neighborhood,
+        street: addressSnapshot.structuredAddress.street,
+        buildingNo: addressSnapshot.structuredAddress.buildingNo,
+        apartmentNo: addressSnapshot.structuredAddress.apartmentNo,
+        siteName: addressSnapshot.structuredAddress.siteName,
+        addressNote: addressSnapshot.structuredAddress.addressNote,
         isDefault: true
       }
     });

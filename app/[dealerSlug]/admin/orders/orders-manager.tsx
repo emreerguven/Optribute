@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { formatAddressMeta, normalizeStructuredAddress, type StructuredAddressInput } from "@/src/lib/address";
+import {
+  buildGoogleMapsSearchUrl,
+  buildMapQuery,
+  formatAddressMeta,
+  normalizeStructuredAddress,
+  type AddressQualityStatus,
+  type StructuredAddressInput
+} from "@/src/lib/address";
 import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
 import type {
@@ -19,6 +26,7 @@ import type {
 
 type Props = {
   dealerSlug: string;
+  dealerCity?: string | null;
   initialOrders: Order[];
   products: Product[];
   campaigns: Campaign[];
@@ -65,10 +73,16 @@ type LookupPayload = {
     fullName: string;
     phone: string;
     addressLine: string;
+    addressQualityStatus?: AddressQualityStatus | null;
     deliveryAddress?: StructuredAddressInput | null;
     notes?: string | null;
   };
   error?: string;
+};
+
+type AddressEditDraft = {
+  addressLine: string;
+  deliveryAddress: StructuredAddressInput;
 };
 
 const EMPTY_MANUAL_FORM: ManualOrderForm = {
@@ -253,8 +267,64 @@ function getInitialDeliveryDraft(order: Order): DeliveryDraft {
   };
 }
 
+function getInitialAddressDraft(order: Order): AddressEditDraft {
+  return {
+    addressLine: order.addressLineRaw ?? order.addressLine,
+    deliveryAddress: {
+      district: order.deliveryAddress.district ?? "",
+      neighborhood: order.deliveryAddress.neighborhood ?? "",
+      street: order.deliveryAddress.street ?? "",
+      buildingNo: order.deliveryAddress.buildingNo ?? "",
+      apartmentNo: order.deliveryAddress.apartmentNo ?? "",
+      siteName: order.deliveryAddress.siteName ?? "",
+      addressNote: order.deliveryAddress.addressNote ?? ""
+    }
+  };
+}
+
+function addressQualityLabel(status: AddressQualityStatus) {
+  switch (status) {
+    case "verified":
+      return "Adres uygun";
+    case "failed":
+      return "Adres doğrulaması zayıf";
+    case "partial":
+    default:
+      return "Kontrol edilmeli";
+  }
+}
+
+function addressQualityHint(status: AddressQualityStatus) {
+  switch (status) {
+    case "verified":
+      return "Harita araması için güçlü görünüyor.";
+    case "failed":
+      return "Adres açık değil. Kurye çıkmadan önce kontrol edin.";
+    case "partial":
+    default:
+      return "Adres kullanılabilir görünüyor ama küçük bir düzeltme gerekebilir.";
+  }
+}
+
+function addressQualityClass(status: AddressQualityStatus) {
+  switch (status) {
+    case "verified":
+      return "address-quality-verified";
+    case "failed":
+      return "address-quality-failed";
+    case "partial":
+    default:
+      return "address-quality-partial";
+  }
+}
+
+function shouldShowAddressQualityFlag(status: AddressQualityStatus) {
+  return status !== "verified";
+}
+
 export function OrdersManager({
   dealerSlug,
+  dealerCity = null,
   initialOrders,
   products,
   campaigns,
@@ -291,6 +361,8 @@ export function OrdersManager({
   const [bulkCourierId, setBulkCourierId] = useState("");
   const [bulkDeliveryStatus, setBulkDeliveryStatus] = useState<Exclude<DeliveryStatus, "unassigned">>("assigned");
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [editingAddressOrderId, setEditingAddressOrderId] = useState<string | null>(null);
+  const [addressDrafts, setAddressDrafts] = useState<Record<string, AddressEditDraft>>({});
 
   useEffect(() => {
     if (!initialHighlightedOrderId) {
@@ -445,6 +517,29 @@ export function OrdersManager({
       if (!next.courierId) {
         next.deliveryStatus = "unassigned";
       }
+
+      return {
+        ...current,
+        [order.id]: next
+      };
+    });
+  }
+
+  function getAddressDraft(order: Order) {
+    return addressDrafts[order.id] ?? getInitialAddressDraft(order);
+  }
+
+  function setAddressDraft(order: Order, patch: Partial<AddressEditDraft>) {
+    setAddressDrafts((current) => {
+      const existing = current[order.id] ?? getInitialAddressDraft(order);
+      const next: AddressEditDraft = {
+        ...existing,
+        ...patch,
+        deliveryAddress: {
+          ...existing.deliveryAddress,
+          ...(patch.deliveryAddress ?? {})
+        }
+      };
 
       return {
         ...current,
@@ -782,6 +877,49 @@ export function OrdersManager({
       );
     } finally {
       setIsBulkUpdating(false);
+    }
+  }
+
+  async function handleAddressSave(order: Order) {
+    const draft = getAddressDraft(order);
+
+    setActiveOrderId(order.id);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/dealers/${dealerSlug}/orders/${order.id}/address`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          addressLine: draft.addressLine,
+          delivery_address: draft.deliveryAddress
+        })
+      });
+
+      const payload = (await response.json()) as { order?: Order; error?: string };
+
+      if (!response.ok || !payload.order) {
+        throw new Error(payload.error ?? "Adres güncellenemedi");
+      }
+
+      setOrders((current) =>
+        current.map((currentOrder) =>
+          currentOrder.id === payload.order?.id ? payload.order : currentOrder
+        )
+      );
+      setAddressDrafts((current) => {
+        const next = { ...current };
+        delete next[order.id];
+        return next;
+      });
+      setEditingAddressOrderId((current) => (current === order.id ? null : current));
+      setMessage("Adres bilgisi güncellendi.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Adres güncellenemedi");
+    } finally {
+      setActiveOrderId(null);
     }
   }
 
@@ -1332,6 +1470,21 @@ export function OrdersManager({
             const deliveryChanged =
               deliveryDraft.courierId !== (order.courier?.id ?? "") ||
               deliveryDraft.deliveryStatus !== order.deliveryStatus;
+            const addressDraft = getAddressDraft(order);
+            const addressPreview = normalizeStructuredAddress({
+              addressLine: addressDraft.addressLine,
+              ...addressDraft.deliveryAddress
+            });
+            const addressChanged =
+              addressDraft.addressLine !== (order.addressLineRaw ?? order.addressLine) ||
+              JSON.stringify(addressDraft.deliveryAddress) !==
+                JSON.stringify(getInitialAddressDraft(order).deliveryAddress);
+            const isEditingAddress = editingAddressOrderId === order.id;
+            const mapQuery = buildMapQuery(order.deliveryAddress, {
+              normalizedAddressLine: order.addressLineNormalized ?? order.addressLine,
+              rawAddressLine: order.addressLineRaw ?? order.addressLine,
+              city: dealerCity
+            });
             const selectableCouriers = couriers.filter(
               (courier) => courier.isActive || courier.id === order.courier?.id || courier.id === deliveryDraft.courierId
             );
@@ -1354,9 +1507,8 @@ export function OrdersManager({
                     />
                   </label>
                   <div className="order-summary-main">
-                    <div>
-                      <span className="detail-label">Müşteri</span>
-                      <h3>{order.customerName}</h3>
+                    <div className="stack-tight">
+                      <strong>{order.customerName}</strong>
                       <p className="caption">{order.phone}</p>
                     </div>
                     <div className="order-summary-meta">
@@ -1382,6 +1534,11 @@ export function OrdersManager({
                       {deliveryStatusLabel(order.deliveryStatus)}
                     </span>
                     <span className="pill">{order.courier?.fullName ?? "Kurye yok"}</span>
+                    {shouldShowAddressQualityFlag(order.addressQualityStatus) ? (
+                      <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
+                        {addressQualityLabel(order.addressQualityStatus)}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="actions">
                     <button
@@ -1389,7 +1546,7 @@ export function OrdersManager({
                       className="button-secondary admin-inline-button"
                       onClick={() => toggleOrderExpanded(order.id)}
                     >
-                      {isExpanded ? "Detayları gizle" : "Detayları aç"}
+                      {isExpanded ? "Kapat" : "Detay"}
                     </button>
                   </div>
                 </div>
@@ -1426,14 +1583,193 @@ export function OrdersManager({
                       <div className="detail-block detail-block-wide">
                         <span className="detail-label">Adres</span>
                         <strong>{order.addressLine}</strong>
+                        <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
+                          {addressQualityLabel(order.addressQualityStatus)}
+                        </span>
+                        <span className="caption">{addressQualityHint(order.addressQualityStatus)}</span>
                         {formatAddressMeta(order.deliveryAddress) ? (
                           <span className="caption">{formatAddressMeta(order.deliveryAddress)}</span>
                         ) : null}
                         {order.deliveryAddress.addressNote ? (
                           <span className="caption">{order.deliveryAddress.addressNote}</span>
                         ) : null}
+                        {order.addressLineRaw && order.addressLineRaw !== order.addressLineNormalized ? (
+                          <span className="caption">Girilen adres: {order.addressLineRaw}</span>
+                        ) : null}
+                        <div className="actions">
+                          <a
+                            href={buildGoogleMapsSearchUrl(mapQuery)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="button-secondary admin-inline-button"
+                          >
+                            Haritada kontrol et
+                          </a>
+                          <button
+                            type="button"
+                            className="button-secondary admin-inline-button"
+                            onClick={() =>
+                              setEditingAddressOrderId((current) =>
+                                current === order.id ? null : order.id
+                              )
+                            }
+                          >
+                            {isEditingAddress ? "Adres panelini kapat" : "Adresi düzelt"}
+                          </button>
+                        </div>
                   </div>
                 </div>
+
+                {isEditingAddress ? (
+                  <div className="delivery-panel stack compact-stack">
+                    <div>
+                      <span className="detail-label">Adres düzeltme</span>
+                      <p className="caption">Haritada daha iyi bulunması için adresi düzenleyin.</p>
+                    </div>
+                    <div className="structured-address-grid">
+                      <label>
+                        İlçe
+                        <input
+                          value={addressDraft.deliveryAddress.district ?? ""}
+                          onChange={(event) =>
+                            setAddressDraft(order, {
+                              deliveryAddress: {
+                                district: event.target.value
+                              }
+                            })
+                          }
+                          placeholder="Örn. Çankaya"
+                        />
+                      </label>
+                      <label>
+                        Mahalle
+                        <input
+                          value={addressDraft.deliveryAddress.neighborhood ?? ""}
+                          onChange={(event) =>
+                            setAddressDraft(order, {
+                              deliveryAddress: {
+                                neighborhood: event.target.value
+                              }
+                            })
+                          }
+                          placeholder="Örn. 100. Yıl"
+                        />
+                      </label>
+                      <label className="manual-form-wide">
+                        Cadde / Sokak
+                        <input
+                          value={addressDraft.deliveryAddress.street ?? ""}
+                          onChange={(event) =>
+                            setAddressDraft(order, {
+                              deliveryAddress: {
+                                street: event.target.value
+                              }
+                            })
+                          }
+                          placeholder="Cadde veya sokak"
+                        />
+                      </label>
+                      <label>
+                        Bina no
+                        <input
+                          value={addressDraft.deliveryAddress.buildingNo ?? ""}
+                          onChange={(event) =>
+                            setAddressDraft(order, {
+                              deliveryAddress: {
+                                buildingNo: event.target.value
+                              }
+                            })
+                          }
+                          placeholder="12"
+                        />
+                      </label>
+                      <label>
+                        Daire no
+                        <input
+                          value={addressDraft.deliveryAddress.apartmentNo ?? ""}
+                          onChange={(event) =>
+                            setAddressDraft(order, {
+                              deliveryAddress: {
+                                apartmentNo: event.target.value
+                              }
+                            })
+                          }
+                          placeholder="4"
+                        />
+                      </label>
+                      <label className="manual-form-wide">
+                        Site / Apartman
+                        <input
+                          value={addressDraft.deliveryAddress.siteName ?? ""}
+                          onChange={(event) =>
+                            setAddressDraft(order, {
+                              deliveryAddress: {
+                                siteName: event.target.value
+                              }
+                            })
+                          }
+                          placeholder="Site veya apartman adı"
+                        />
+                      </label>
+                      <label className="manual-form-wide">
+                        Adres notu
+                        <input
+                          value={addressDraft.deliveryAddress.addressNote ?? ""}
+                          onChange={(event) =>
+                            setAddressDraft(order, {
+                              deliveryAddress: {
+                                addressNote: event.target.value
+                              }
+                            })
+                          }
+                          placeholder="Kapı kodu, blok, kat vb."
+                        />
+                      </label>
+                      <label className="manual-form-wide">
+                        Açık adres satırı
+                        <textarea
+                          value={addressDraft.addressLine}
+                          onChange={(event) =>
+                            setAddressDraft(order, { addressLine: event.target.value })
+                          }
+                          placeholder="Gerekirse açık adresi serbest metin olarak düzeltin"
+                        />
+                      </label>
+                    </div>
+                    <div className="summary-card compact-stack">
+                      <span className="detail-label">Normalleştirilmiş önizleme</span>
+                      <strong>{addressPreview.addressLine || "Adres alanlarını doldurun"}</strong>
+                      {formatAddressMeta(addressPreview) ? (
+                        <span className="caption">{formatAddressMeta(addressPreview)}</span>
+                      ) : null}
+                    </div>
+                    <div className="actions">
+                      <button
+                        type="button"
+                        className="button-secondary admin-inline-button"
+                        onClick={() => {
+                          setEditingAddressOrderId(null);
+                          setAddressDrafts((current) => {
+                            const next = { ...current };
+                            delete next[order.id];
+                            return next;
+                          });
+                        }}
+                        disabled={isUpdating}
+                      >
+                        Vazgeç
+                      </button>
+                      <button
+                        type="button"
+                        className="button admin-inline-button"
+                        onClick={() => handleAddressSave(order)}
+                        disabled={isUpdating || !addressChanged}
+                      >
+                        {isUpdating ? "Kaydediliyor..." : "Adresi kaydet"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="summary-card stack compact-stack">
                   <div className="detail-label">Ürün özeti</div>

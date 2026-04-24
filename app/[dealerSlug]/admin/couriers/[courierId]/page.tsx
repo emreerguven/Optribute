@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { buildMapQuery, formatAddressMeta } from "@/src/lib/address";
+import {
+  buildGoogleMapsDirectionsUrl,
+  buildGoogleMapsSearchUrl,
+  buildMapQuery,
+  buildWhatsAppRouteShareUrl,
+  formatAddressMeta,
+  type AddressQualityStatus
+} from "@/src/lib/address";
 import { getDealerBrandStyle } from "@/src/lib/branding";
 import { formatCurrency } from "@/src/lib/currency";
 import { requireAdminPage } from "@/src/server/auth/guards";
@@ -69,56 +76,32 @@ function formatOrderTime(timestamp: string) {
   }).format(new Date(timestamp));
 }
 
-function buildSearchUrl(query: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+function addressQualityLabel(status: AddressQualityStatus) {
+  switch (status) {
+    case "verified":
+      return "Adres uygun";
+    case "failed":
+      return "Adres doğrulaması zayıf";
+    case "partial":
+    default:
+      return "Kontrol edilmeli";
+  }
 }
 
-function buildDirectionsUrl(queries: string[]) {
-  if (queries.length < 2) {
-    return null;
+function addressQualityClass(status: AddressQualityStatus) {
+  switch (status) {
+    case "verified":
+      return "address-quality-verified";
+    case "failed":
+      return "address-quality-failed";
+    case "partial":
+    default:
+      return "address-quality-partial";
   }
-
-  const origin = queries[0]!;
-  const destination = queries[queries.length - 1]!;
-  const rest = queries.slice(1);
-  const waypoints = rest.slice(0, -1);
-  const params = new URLSearchParams({
-    api: "1",
-    origin,
-    destination,
-    travelmode: "driving"
-  });
-
-  if (waypoints.length > 0) {
-    params.set("waypoints", waypoints.join("|"));
-  }
-
-  return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-function buildDirectionsUrlWithDepot(depotQuery: string | null, stopQueries: string[]) {
-  if (depotQuery) {
-    if (stopQueries.length === 0) {
-      return null;
-    }
-
-    const destination = stopQueries[stopQueries.length - 1]!;
-    const waypoints = stopQueries.slice(0, -1);
-    const params = new URLSearchParams({
-      api: "1",
-      origin: depotQuery,
-      destination,
-      travelmode: "driving"
-    });
-
-    if (waypoints.length > 0) {
-      params.set("waypoints", waypoints.join("|"));
-    }
-
-    return `https://www.google.com/maps/dir/?${params.toString()}`;
-  }
-
-  return buildDirectionsUrl(stopQueries);
+function shouldShowAddressQualityFlag(status: AddressQualityStatus) {
+  return status !== "verified";
 }
 
 export default async function CourierWorklistPage({
@@ -168,12 +151,16 @@ export default async function CourierWorklistPage({
       order.deliveryAddress.buildingNo,
       order.deliveryAddress.apartmentNo,
       order.deliveryAddress.siteName,
-      order.addressLine
+      order.addressLineNormalized ?? order.addressLine
     ]
       .filter(Boolean)
       .join("|")
       .toLocaleLowerCase("tr-TR");
-    const mapQuery = buildMapQuery(order.deliveryAddress, order.addressLine, dealer.city);
+    const mapQuery = buildMapQuery(order.deliveryAddress, {
+      normalizedAddressLine: order.addressLineNormalized ?? order.addressLine,
+      rawAddressLine: order.addressLineRaw ?? order.addressLine,
+      city: dealer.city
+    });
     const existing = groupedStopsMap.get(key);
 
     if (existing) {
@@ -184,7 +171,7 @@ export default async function CourierWorklistPage({
 
     groupedStopsMap.set(key, {
       key,
-      label: order.addressLine,
+      label: order.addressLineNormalized ?? order.addressLine,
       areaLabel: formatAddressMeta(order.deliveryAddress),
       mapQuery,
       orders: [order],
@@ -195,11 +182,8 @@ export default async function CourierWorklistPage({
   const groupedStops = [...groupedStopsMap.values()].sort((left, right) =>
     `${left.areaLabel} ${left.label}`.localeCompare(`${right.areaLabel} ${right.label}`, "tr")
   );
-  const depotQuery = dealer.depotAddress?.trim() || null;
-  const directionsUrl = buildDirectionsUrlWithDepot(
-    depotQuery,
-    groupedStops.map((stop) => stop.mapQuery)
-  );
+  const directionsUrl = buildGoogleMapsDirectionsUrl(groupedStops.map((stop) => stop.mapQuery));
+  const whatsappUrl = buildWhatsAppRouteShareUrl(courier.phone, directionsUrl);
 
   return (
     <main className="shell admin-shell stack" style={brandStyle}>
@@ -237,20 +221,31 @@ export default async function CourierWorklistPage({
           <div>
             <span className="kicker">Rota için hazırla</span>
             <h2>Durak listesi</h2>
-            <p className="caption">Sıralama optimize edilmez; aktif siparişler teslimat duraklarına göre gruplanır.</p>
+            <p className="caption">Duraklar teslimat için gruplanır. Google Maps mevcut konumdan rota başlatır.</p>
           </div>
-          {directionsUrl ? (
-            <a href={directionsUrl} target="_blank" rel="noreferrer" className="button-secondary">
-              Google Maps'te sırayla aç
-            </a>
-          ) : null}
+          <div className="actions">
+            {directionsUrl ? (
+              <a href={directionsUrl} target="_blank" rel="noreferrer" className="button-secondary">
+                Google Maps'te aç
+              </a>
+            ) : null}
+            {whatsappUrl ? (
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="button">
+                WhatsApp ile gönder
+              </a>
+            ) : (
+              <button type="button" className="button" disabled>
+                WhatsApp ile gönder
+              </button>
+            )}
+          </div>
         </div>
 
-        {depotQuery ? (
-          <div className="summary-card compact-stack">
-            <span className="detail-label">Başlangıç noktası</span>
-            <strong>{dealer.depotName?.trim() || "Depo"}</strong>
-            <span>{depotQuery}</span>
+        {!whatsappUrl ? (
+          <div className="note warning">
+            {courier.phone?.trim()
+              ? "WhatsApp linki için rota oluşturulamadı."
+              : "Kurye telefon numarası olmadığı için WhatsApp linki oluşturulamıyor."}
           </div>
         ) : null}
 
@@ -266,7 +261,12 @@ export default async function CourierWorklistPage({
                     <h3>{stop.label}</h3>
                     <p className="caption">{stop.areaLabel || "Adres özeti yok"}</p>
                   </div>
-                  <a href={buildSearchUrl(stop.mapQuery)} target="_blank" rel="noreferrer" className="button-secondary admin-inline-button">
+                  <a
+                    href={buildGoogleMapsSearchUrl(stop.mapQuery)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="button-secondary admin-inline-button"
+                  >
                     Haritada ara
                   </a>
                 </div>
@@ -278,12 +278,17 @@ export default async function CourierWorklistPage({
                   <span>Toplam tutar</span>
                   <strong>{formatCurrency(stop.totalCents)}</strong>
                 </div>
-                <div className="stack compact-stack">
+                  <div className="stack compact-stack">
                   {stop.orders.map((order) => (
                     <div key={order.id} className="route-stop-order-row">
                       <div>
                         <strong>{order.customerName}</strong>
                         <p className="caption">{order.phone}</p>
+                        {shouldShowAddressQualityFlag(order.addressQualityStatus) ? (
+                          <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
+                            {addressQualityLabel(order.addressQualityStatus)}
+                          </span>
+                        ) : null}
                       </div>
                       <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
                         {deliveryStatusLabel(order.deliveryStatus)}
@@ -335,9 +340,15 @@ export default async function CourierWorklistPage({
                         </div>
                         <div className="detail-block detail-block-wide">
                           <span className="detail-label">Teslimat adresi</span>
-                          <strong>{order.addressLine}</strong>
+                          <strong>{order.addressLineNormalized ?? order.addressLine}</strong>
+                          <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
+                            {addressQualityLabel(order.addressQualityStatus)}
+                          </span>
                           {order.deliveryAddress.addressNote ? (
                             <span className="caption">{order.deliveryAddress.addressNote}</span>
+                          ) : null}
+                          {order.addressLineRaw && order.addressLineRaw !== order.addressLineNormalized ? (
+                            <span className="caption">Girilen adres: {order.addressLineRaw}</span>
                           ) : null}
                         </div>
                         <div className="detail-block">

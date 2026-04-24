@@ -36,7 +36,7 @@ export async function GET(
     customer: {
       fullName: customer.fullName,
       phone: customer.phone,
-      addressLine: defaultAddress?.line1 ?? "",
+      addressLine: defaultAddress?.line1Normalized ?? defaultAddress?.line1 ?? "",
       deliveryAddress: defaultAddress
         ? {
             district: defaultAddress.district,
@@ -48,6 +48,7 @@ export async function GET(
             addressNote: defaultAddress.addressNote
           }
         : null,
+      addressQualityStatus: defaultAddress?.addressQualityStatus ?? null,
       notes: customer.notes
     }
   });

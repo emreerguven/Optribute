@@ -49,6 +49,12 @@ enum DeliveryStatus {
   DELIVERED
 }
 
+enum AddressQualityStatus {
+  VERIFIED
+  PARTIAL
+  FAILED
+}
+
 model Company {
   id                   String    @id
   slug                 String    @unique
@@ -170,6 +176,9 @@ model CustomerAddress {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   label      String?
   line1      String
+  line1Raw   String?
+  line1Normalized String?
+  addressQualityStatus AddressQualityStatus @default(PARTIAL)
   district   String?
   neighborhood String?
   street     String?
@@ -197,6 +206,9 @@ model Order {
   phone            String
   normalizedPhone  String
   addressLine      String
+  addressLineRaw   String?
+  addressLineNormalized String?
+  addressQualityStatus AddressQualityStatus @default(PARTIAL)
   district         String?
   neighborhood     String?
   street           String?
