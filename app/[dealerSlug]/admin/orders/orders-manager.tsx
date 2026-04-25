@@ -1053,7 +1053,7 @@ export function OrdersManager({
         </button>
       </div>
 
-      <div className="admin-console-toolbar admin-console-toolbar-wide admin-console-toolbar-sticky">
+      <div className="admin-console-toolbar admin-console-toolbar-wide admin-console-toolbar-sticky orders-control-bar">
         <div className="dispatch-preset-row">
           {DISPATCH_PRESETS.map((preset) => (
             <button
@@ -1700,11 +1700,11 @@ export function OrdersManager({
               <article
                 key={order.id}
                 id={`order-${order.id}`}
-                className={`order-card stack ${selectedOrderIds.includes(order.id) ? "order-card-selected" : ""} ${
+                className={`order-card order-card-compact ${selectedOrderIds.includes(order.id) ? "order-card-selected" : ""} ${
                   initialHighlightedOrderId === order.id ? "order-card-highlighted" : ""
                 }`}
               >
-                <div className="order-summary-compact">
+                <div className="order-summary-compact order-summary-row">
                   <label className="order-select-checkbox">
                     <input
                       type="checkbox"
@@ -1713,41 +1713,46 @@ export function OrdersManager({
                       aria-label={`${order.customerName} siparişini seç`}
                     />
                   </label>
-                  <div className="order-summary-main">
-                    <div className="stack-tight">
+                  <div className="order-summary-main order-summary-main-compact">
+                    <div className="stack-tight order-identity-block">
                       <strong>{order.customerName}</strong>
                       <p className="caption">{order.phone}</p>
                     </div>
-                    <div className="order-summary-meta">
-                      <div className="compact-meta-item">
-                        <span className="detail-label">Tutar</span>
-                        <strong>{formatCurrency(total)}</strong>
-                      </div>
-                      <div className="compact-meta-item">
+                    <div className="order-summary-meta order-summary-meta-compact">
+                      <div className="compact-meta-item compact-meta-item-inline">
                         <span className="detail-label">Zaman</span>
                         <strong>{formatOrderTime(order.createdAt)}</strong>
                       </div>
+                      <div className="compact-meta-item compact-meta-item-inline">
+                        <span className="detail-label">Tutar</span>
+                        <strong>{formatCurrency(total)}</strong>
+                      </div>
                     </div>
                   </div>
-                  <div className="order-summary-tags">
+                  <div className="order-summary-tags order-summary-tags-compact">
                     <span className="status">{orderStatusLabel(order.status)}</span>
                     <span className={`source-badge source-badge-${order.source}`}>
                       {sourceLabel(order.source)}
                     </span>
+                    <span className="pill">
+                      {order.courier?.fullName ?? "Kurye yok"}
+                    </span>
                     <span className={`payment-status ${primaryPayment ? paymentStatusClass(primaryPayment.status) : "payment-status-pending"}`}>
-                      {primaryPayment ? `${paymentMethodLabel(primaryPayment.method)} • ${paymentStatusLabel(primaryPayment.status)}` : "Ödeme bekliyor"}
+                      {primaryPayment ? paymentMethodLabel(primaryPayment.method) : "Ödeme bekliyor"}
+                    </span>
+                    <span className={`payment-status ${primaryPayment ? paymentStatusClass(primaryPayment.status) : "payment-status-pending"}`}>
+                      {primaryPayment ? paymentStatusLabel(primaryPayment.status) : "Bekliyor"}
                     </span>
                     <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
                       {deliveryStatusLabel(order.deliveryStatus)}
                     </span>
-                    <span className="pill">{order.courier?.fullName ?? "Kurye yok"}</span>
                     {shouldShowAddressQualityWarning(order.addressQualityStatus) ? (
                       <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
                         {addressQualityLabel(order.addressQualityStatus)}
                       </span>
                     ) : null}
                   </div>
-                  <div className="actions">
+                  <div className="actions order-row-actions">
                     <button
                       type="button"
                       className="button-secondary admin-inline-button"
@@ -1759,7 +1764,7 @@ export function OrdersManager({
                 </div>
 
                 {isExpanded ? (
-                <>
+                <div className="order-expanded-panel stack compact-stack">
                 <div className="admin-detail-grid">
                   <div className="detail-block">
                     <span className="detail-label">Müşteri</span>
@@ -2071,13 +2076,8 @@ export function OrdersManager({
                 ) : (
                   <div className="caption">Bu sipariş için ek durum işlemi yok.</div>
                 )}
-                </>
-                ) : null}
-
-                <div className="summary-row total-row">
-                  <span>Toplam</span>
-                  <strong>{formatCurrency(total)}</strong>
                 </div>
+                ) : null}
               </article>
             );
           })}
