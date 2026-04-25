@@ -91,6 +91,158 @@ export async function findCustomerByPhone(companyId: string, phone: string) {
   return findCustomerByNormalizedPhone(companyId, normalizePhone(phone));
 }
 
+export type CustomerOperatorOrderSummary = {
+  id: string;
+  createdAt: string;
+  paymentMethod: "cash-on-delivery" | "card-on-delivery" | "online" | null;
+  items: Array<{
+    productId: string | null;
+    name: string;
+    quantity: number;
+  }>;
+};
+
+export type CustomerOperatorQuickProduct = {
+  productId: string;
+  name: string;
+  quantity: number;
+};
+
+export type CustomerOperatorProfile = {
+  customer: Customer;
+  lastOrderDate: string | null;
+  recentOrder: CustomerOperatorOrderSummary | null;
+  frequentProducts: CustomerOperatorQuickProduct[];
+};
+
+function toOperatorPaymentMethod(
+  method: "CASH_ON_DELIVERY" | "CARD_ON_DELIVERY" | "ACCOUNT_BALANCE" | null | undefined
+): CustomerOperatorOrderSummary["paymentMethod"] {
+  switch (method) {
+    case "CASH_ON_DELIVERY":
+      return "cash-on-delivery";
+    case "CARD_ON_DELIVERY":
+      return "card-on-delivery";
+    case "ACCOUNT_BALANCE":
+      return "online";
+    default:
+      return null;
+  }
+}
+
+export async function findCustomerOperatorProfileByNormalizedPhone(
+  companyId: string,
+  normalizedPhone: string
+): Promise<CustomerOperatorProfile | null> {
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  const customerRecord = await loadCustomerByNormalizedPhone(db, companyId, normalizedPhone);
+
+  if (!customerRecord) {
+    return null;
+  }
+
+  const customer = toCustomer(customerRecord);
+  const recentOrders = await db.order.findMany({
+    where: {
+      companyId,
+      OR: customerRecord.id
+        ? [
+            {
+              customerId: customerRecord.id
+            },
+            {
+              normalizedPhone
+            }
+          ]
+        : [
+            {
+              normalizedPhone
+            }
+          ]
+    },
+    include: {
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        },
+        take: 1
+      }
+    },
+    orderBy: [
+      {
+        submittedAt: "desc"
+      },
+      {
+        createdAt: "desc"
+      }
+    ],
+    take: 5
+  });
+
+  const recentOrder = recentOrders[0]
+    ? {
+        id: recentOrders[0].id,
+        createdAt: recentOrders[0].submittedAt.toISOString(),
+        paymentMethod: toOperatorPaymentMethod(recentOrders[0].payments[0]?.method),
+        items: recentOrders[0].orderItems
+          .filter((item) => item.unitPriceCents > 0)
+          .map((item) => ({
+            productId: item.productId,
+            name: item.productName,
+            quantity: item.quantity
+          }))
+      }
+    : null;
+
+  const frequentProductsMap = new Map<
+    string,
+    {
+      productId: string;
+      name: string;
+      quantity: number;
+    }
+  >();
+
+  for (const order of recentOrders) {
+    for (const item of order.orderItems) {
+      if (!item.productId || item.unitPriceCents <= 0) {
+        continue;
+      }
+
+      const existing = frequentProductsMap.get(item.productId);
+
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        frequentProductsMap.set(item.productId, {
+          productId: item.productId,
+          name: item.productName,
+          quantity: item.quantity
+        });
+      }
+    }
+  }
+
+  const frequentProducts = [...frequentProductsMap.values()]
+    .sort((left, right) => right.quantity - left.quantity || left.name.localeCompare(right.name, "tr"))
+    .slice(0, 4);
+
+  return {
+    customer,
+    lastOrderDate: recentOrders[0]?.submittedAt.toISOString() ?? null,
+    recentOrder,
+    frequentProducts
+  };
+}
+
 export async function upsertCustomerForOrder(
   input: {
     companyId: string;

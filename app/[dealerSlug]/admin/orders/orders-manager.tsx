@@ -77,6 +77,22 @@ type LookupPayload = {
     addressQualityStatus?: AddressQualityStatus | null;
     deliveryAddress?: StructuredAddressInput | null;
     notes?: string | null;
+    lastOrderDate?: string | null;
+    recentOrder?: {
+      id: string;
+      createdAt: string;
+      paymentMethod: PaymentMethod | null;
+      items: Array<{
+        productId: string | null;
+        name: string;
+        quantity: number;
+      }>;
+    } | null;
+    frequentProducts?: Array<{
+      productId: string;
+      name: string;
+      quantity: number;
+    }>;
   };
   error?: string;
 };
@@ -85,6 +101,8 @@ type AddressEditDraft = {
   addressLine: string;
   deliveryAddress: StructuredAddressInput;
 };
+
+type OperatorLookupCustomer = NonNullable<LookupPayload["customer"]>;
 
 const EMPTY_MANUAL_FORM: ManualOrderForm = {
   phone: "",
@@ -346,6 +364,7 @@ export function OrdersManager({
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
+  const [lookupCustomer, setLookupCustomer] = useState<OperatorLookupCustomer | null>(null);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>("all");
@@ -523,6 +542,70 @@ export function OrdersManager({
     }));
   }
 
+  function applyProductLines(
+    items: Array<{
+      productId: string | null;
+      quantity: number;
+    }>
+  ) {
+    const nextQuantities: Record<string, number> = {};
+
+    for (const item of items) {
+      if (!item.productId) {
+        continue;
+      }
+
+      const productExists = products.some((product) => product.id === item.productId);
+
+      if (!productExists) {
+        continue;
+      }
+
+      nextQuantities[item.productId] = Math.max(0, Math.floor(item.quantity));
+    }
+
+    setManualQuantities(nextQuantities);
+  }
+
+  function repeatLastOrder() {
+    if (!lookupCustomer?.recentOrder) {
+      return;
+    }
+
+    applyProductLines(lookupCustomer.recentOrder.items);
+
+    setManualForm((current) => ({
+      ...current,
+      phone: lookupCustomer.phone ?? current.phone,
+      fullName: lookupCustomer.fullName ?? current.fullName,
+      addressLine: lookupCustomer.addressLine ?? current.addressLine,
+      deliveryAddress: lookupCustomer.deliveryAddress
+        ? {
+            district: lookupCustomer.deliveryAddress.district ?? "",
+            neighborhood: lookupCustomer.deliveryAddress.neighborhood ?? "",
+            street: lookupCustomer.deliveryAddress.street ?? "",
+            buildingNo: lookupCustomer.deliveryAddress.buildingNo ?? "",
+            apartmentNo: lookupCustomer.deliveryAddress.apartmentNo ?? "",
+            siteName: lookupCustomer.deliveryAddress.siteName ?? "",
+            addressNote: lookupCustomer.deliveryAddress.addressNote ?? ""
+          }
+        : current.deliveryAddress,
+      notes: lookupCustomer.notes ?? current.notes,
+      paymentMethod: lookupCustomer.recentOrder?.paymentMethod ?? current.paymentMethod
+    }));
+
+    setLookupMessage("Son sipariş ürünleri forma aktarıldı.");
+  }
+
+  function applyFrequentProductShortcut(productId: string, quantity: number) {
+    const safeQuantity = Math.max(1, Math.floor(quantity));
+
+    setManualQuantities((current) => ({
+      ...current,
+      [productId]: safeQuantity
+    }));
+  }
+
   function getDeliveryDraft(order: Order) {
     return deliveryDrafts[order.id] ?? getInitialDeliveryDraft(order);
   }
@@ -642,6 +725,7 @@ export function OrdersManager({
       }
 
       if (!payload.found || !payload.customer) {
+        setLookupCustomer(null);
         setLookupMessage("Kayıt bulunamadı. Bilgileri manuel girin.");
         return;
       }
@@ -664,8 +748,10 @@ export function OrdersManager({
           : current.deliveryAddress,
         notes: payload.customer?.notes ?? current.notes
       }));
+      setLookupCustomer(payload.customer);
       setLookupMessage("Müşteri bilgileri getirildi.");
     } catch (error) {
+      setLookupCustomer(null);
       const nextMessage = error instanceof Error ? error.message : "Müşteri bilgisi alınamadı";
       setLookupMessage(nextMessage);
     } finally {
@@ -723,6 +809,7 @@ export function OrdersManager({
       setOrders((current) => [payload.order!, ...current.filter((order) => order.id !== payload.order!.id)]);
       setManualForm(EMPTY_MANUAL_FORM);
       setManualQuantities({});
+      setLookupCustomer(null);
       setLookupMessage(null);
       setCreateMessage(
         payload.paymentPageUrl ? "Sipariş eklendi. Online ödeme bekliyor." : "Sipariş eklendi."
@@ -1174,7 +1261,10 @@ export function OrdersManager({
                 <input
                   value={manualForm.phone}
                   onChange={(event) =>
-                    setManualForm((current) => ({ ...current, phone: event.target.value }))
+                    {
+                      setLookupCustomer(null);
+                      setManualForm((current) => ({ ...current, phone: event.target.value }));
+                    }
                   }
                   placeholder="05xx xxx xx xx"
                 />
@@ -1334,7 +1424,84 @@ export function OrdersManager({
                   <span className="caption">{formatAddressMeta(manualAddressPreview)}</span>
                 ) : null}
               </div>
+          </div>
+
+          {lookupCustomer ? (
+            <div className="manual-form-wide summary-card stack compact-stack operator-customer-card">
+              <div className="order-topline">
+                <div>
+                  <span className="detail-label">Kayıtlı müşteri</span>
+                  <h3>{lookupCustomer.fullName}</h3>
+                </div>
+                <span className="pill">{lookupCustomer.phone}</span>
+              </div>
+
+              <div className="operator-customer-grid">
+                <div className="detail-block">
+                  <span className="detail-label">Kayıtlı adres</span>
+                  <strong>{lookupCustomer.addressLine || "Adres yok"}</strong>
+                </div>
+                <div className="detail-block">
+                  <span className="detail-label">Son sipariş</span>
+                  <strong>
+                    {lookupCustomer.lastOrderDate
+                      ? formatOrderTime(lookupCustomer.lastOrderDate)
+                      : "Sipariş yok"}
+                  </strong>
+                </div>
+              </div>
+
+              {lookupCustomer.recentOrder ? (
+                <div className="operator-last-order stack compact-stack">
+                  <div className="order-topline">
+                    <div>
+                      <span className="detail-label">Son sipariş</span>
+                      <p className="caption">
+                        {formatOrderTime(lookupCustomer.recentOrder.createdAt)}
+                        {lookupCustomer.recentOrder.paymentMethod
+                          ? ` • ${paymentMethodLabel(lookupCustomer.recentOrder.paymentMethod)}`
+                          : ""}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="button-secondary admin-inline-button"
+                      onClick={repeatLastOrder}
+                    >
+                      Son siparişi tekrar et
+                    </button>
+                  </div>
+
+                  <div className="operator-line-list">
+                    {lookupCustomer.recentOrder.items.map((item, index) => (
+                      <div key={`${item.productId ?? item.name}_${index}`} className="summary-row">
+                        <span>{item.quantity} x {item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {lookupCustomer.frequentProducts && lookupCustomer.frequentProducts.length > 0 ? (
+                <div className="stack compact-stack">
+                  <span className="detail-label">Hızlı ekle</span>
+                  <div className="operator-quick-products">
+                    {lookupCustomer.frequentProducts.map((item) => (
+                      <button
+                        key={item.productId}
+                        type="button"
+                        className="button-secondary admin-inline-button"
+                        onClick={() => applyFrequentProductShortcut(item.productId, item.quantity)}
+                      >
+                        {item.name} • {item.quantity} adet
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
+          ) : null}
+
             <label>
               Not
               <input

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findCustomerByNormalizedPhone } from "@/src/server/domain/customers/service";
+import { findCustomerOperatorProfileByNormalizedPhone } from "@/src/server/domain/customers/service";
 import { getCompanyBySlug } from "@/src/server/domain/companies/service";
 import { normalizePhone } from "@/src/server/domain/phone";
 
@@ -22,12 +22,13 @@ export async function GET(
     return NextResponse.json({ error: "Phone is required" }, { status: 400 });
   }
 
-  const customer = await findCustomerByNormalizedPhone(dealer.id, normalizedPhone);
+  const profile = await findCustomerOperatorProfileByNormalizedPhone(dealer.id, normalizedPhone);
 
-  if (!customer) {
+  if (!profile) {
     return NextResponse.json({ found: false });
   }
 
+  const customer = profile.customer;
   const defaultAddress =
     customer.addresses.find((address) => address.isDefault) ?? customer.addresses[0];
 
@@ -49,7 +50,10 @@ export async function GET(
           }
         : null,
       addressQualityStatus: defaultAddress?.addressQualityStatus ?? null,
-      notes: customer.notes
+      notes: customer.notes,
+      lastOrderDate: profile.lastOrderDate,
+      recentOrder: profile.recentOrder,
+      frequentProducts: profile.frequentProducts
     }
   });
 }
