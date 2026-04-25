@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { deriveAddressSnapshot, type AddressQualityStatus, type StructuredAddressInput } from "@/src/lib/address";
 import {
   AddressQualityStatus as PrismaAddressQualityStatus,
+  CollectionStatus as PrismaCollectionStatus,
   DeliveryStatus as PrismaDeliveryStatus,
   OrderStatus as PrismaOrderStatus,
   PaymentMethod as PrismaPaymentMethod,
@@ -14,6 +15,7 @@ import { listActiveCampaignsForCompany } from "@/src/server/domain/campaigns/ser
 import { upsertCustomerForOrder } from "@/src/server/domain/customers/service";
 import type {
   Company,
+  CollectionStatus,
   Courier,
   DeliveryStatus,
   Order,
@@ -75,6 +77,25 @@ function toPaymentStatus(status: PrismaPaymentStatus): PaymentStatus {
   throw new Error(`Unsupported payment status: ${exhaustiveStatus}`);
 }
 
+function toCollectionStatus(
+  status: PrismaCollectionStatus,
+  paymentStatus: PrismaPaymentStatus | null | undefined
+): CollectionStatus {
+  if (paymentStatus === PrismaPaymentStatus.PAID) {
+    return "paid";
+  }
+
+  switch (status) {
+    case PrismaCollectionStatus.PAID:
+      return "paid";
+    case PrismaCollectionStatus.ON_ACCOUNT:
+      return "on-account";
+    case PrismaCollectionStatus.PENDING:
+    default:
+      return "pending";
+  }
+}
+
 function toPaymentMethod(method: PrismaPaymentMethod): PaymentMethod {
   switch (method) {
     case PrismaPaymentMethod.CASH_ON_DELIVERY:
@@ -129,6 +150,18 @@ function toPrismaPaymentMethod(method: PaymentMethod): PrismaPaymentMethod {
 
   const exhaustiveMethod: never = method;
   throw new Error(`Unsupported payment method: ${exhaustiveMethod}`);
+}
+
+function toPrismaCollectionStatus(status: CollectionStatus): PrismaCollectionStatus {
+  switch (status) {
+    case "paid":
+      return PrismaCollectionStatus.PAID;
+    case "on-account":
+      return PrismaCollectionStatus.ON_ACCOUNT;
+    case "pending":
+    default:
+      return PrismaCollectionStatus.PENDING;
+  }
 }
 
 function toPrismaDeliveryStatus(status: DeliveryStatus): PrismaDeliveryStatus {
@@ -234,6 +267,7 @@ function toOrder(order: {
   deliveryNotes: string | null;
   status: PrismaOrderStatus;
   deliveryStatus: PrismaDeliveryStatus;
+  collectionStatus: PrismaCollectionStatus;
   source: string;
   submittedAt: Date;
   orderItems: Array<{
@@ -275,6 +309,7 @@ function toOrder(order: {
     status: toOrderStatus(order.status),
     source: toOrderSource(order.source),
     deliveryStatus: toDeliveryStatus(order.deliveryStatus),
+    collectionStatus: toCollectionStatus(order.collectionStatus, order.payments[0]?.status),
     createdAt: order.submittedAt.toISOString(),
     notes: order.deliveryNotes,
     items: order.orderItems.map((item) => ({
@@ -470,6 +505,78 @@ export async function updateOrderStatusForCompany(
   return toOrder(updatedOrder);
 }
 
+export async function updateOrderCollectionStatusForCompany(
+  companyId: string,
+  orderId: string,
+  nextStatus: CollectionStatus
+) {
+  const existingOrder = await db.order.findFirst({
+    where: {
+      id: orderId,
+      companyId
+    },
+    include: {
+      courier: true,
+      orderItems: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      },
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        }
+      }
+    }
+  });
+
+  if (!existingOrder) {
+    throw new Error("Sipariş bulunamadı");
+  }
+
+  const updatedOrder = await db.$transaction(async (tx) => {
+    const primaryPayment = existingOrder.payments[0];
+
+    if (primaryPayment && primaryPayment.method !== PrismaPaymentMethod.ACCOUNT_BALANCE) {
+      await tx.payment.update({
+        where: {
+          id: primaryPayment.id
+        },
+        data: {
+          status:
+            nextStatus === "paid"
+              ? PrismaPaymentStatus.PAID
+              : PrismaPaymentStatus.PENDING
+        }
+      });
+    }
+
+    return tx.order.update({
+      where: {
+        id: existingOrder.id
+      },
+      data: {
+        collectionStatus: toPrismaCollectionStatus(nextStatus)
+      },
+      include: {
+        courier: true,
+        orderItems: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        },
+        payments: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
+  });
+
+  return toOrder(updatedOrder);
+}
+
 export async function updateOrderDeliveryForCompany(
   companyId: string,
   orderId: string,
@@ -656,6 +763,7 @@ export async function createOrder(companyId: string, draft: OrderDraft) {
         deliveryNotes: draft.notes?.trim() || null,
         status: PrismaOrderStatus.PENDING,
         deliveryStatus: PrismaDeliveryStatus.UNASSIGNED,
+        collectionStatus: PrismaCollectionStatus.PENDING,
         source: draft.source ?? "qr",
         orderItems: {
           create: orderItems.map((item) => ({
@@ -918,6 +1026,16 @@ export async function updateOnlinePaymentResultByToken(
           : status === "failed"
             ? PrismaPaymentStatus.FAILED
             : PrismaPaymentStatus.PENDING
+    }
+  });
+
+  await db.order.update({
+    where: {
+      id: payment.orderId
+    },
+    data: {
+      collectionStatus:
+        status === "paid" ? PrismaCollectionStatus.PAID : PrismaCollectionStatus.PENDING
     }
   });
 

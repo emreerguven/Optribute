@@ -36,6 +36,12 @@ enum PaymentMethod {
   ACCOUNT_BALANCE
 }
 
+enum CollectionStatus {
+  PENDING
+  PAID
+  ON_ACCOUNT
+}
+
 enum CampaignType {
   BUNDLE_GIFT
   QUANTITY
@@ -219,6 +225,7 @@ model Order {
   deliveryNotes    String?
   status           OrderStatus @default(PENDING)
   deliveryStatus   DeliveryStatus @default(UNASSIGNED)
+  collectionStatus CollectionStatus @default(PENDING)
   source           String      @default("qr")
   submittedAt      DateTime    @default(now())
   createdAt        DateTime    @default(now())

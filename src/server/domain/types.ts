@@ -13,6 +13,7 @@ export type OrderStatus =
   | "completed"
   | "cancelled";
 export type PaymentStatus = "pending" | "paid" | "failed" | "cancelled";
+export type CollectionStatus = "pending" | "paid" | "on-account";
 export const ORDER_SOURCES = ["qr", "manual"] as const;
 export type OrderSource = (typeof ORDER_SOURCES)[number];
 export const DELIVERY_STATUSES = [
@@ -151,6 +152,7 @@ export type Order = {
   status: OrderStatus;
   source: OrderSource;
   deliveryStatus: DeliveryStatus;
+  collectionStatus: CollectionStatus;
   courier: Courier | null;
   createdAt: string;
   notes?: string | null;

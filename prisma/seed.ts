@@ -1,5 +1,6 @@
 import {
   CampaignType,
+  CollectionStatus,
   DeliveryStatus,
   OrderStatus,
   PaymentMethod,
@@ -722,6 +723,25 @@ function getPaymentState(
   return PaymentStatus.PENDING;
 }
 
+function getCollectionState(
+  rand: () => number,
+  paymentStatus: PaymentStatus,
+  deliveryStatus: DeliveryStatus
+) {
+  if (paymentStatus === PaymentStatus.PAID) {
+    return CollectionStatus.PAID;
+  }
+
+  if (deliveryStatus === DeliveryStatus.DELIVERED) {
+    return weightedPick(rand, [
+      { value: CollectionStatus.ON_ACCOUNT, weight: 4 },
+      { value: CollectionStatus.PENDING, weight: 1 }
+    ]);
+  }
+
+  return CollectionStatus.PENDING;
+}
+
 async function seedCompanies() {
   await prisma.company.createMany({
     data: [
@@ -926,6 +946,7 @@ async function seedJavsuOrders() {
         { value: PaymentMethod.ACCOUNT_BALANCE, weight: 2 }
       ]);
       const paymentStatus = getPaymentState(rand, paymentMethod, state.status, state.deliveryStatus);
+      const collectionStatus = getCollectionState(rand, paymentStatus, state.deliveryStatus);
       const reference = paymentMethod === PaymentMethod.ACCOUNT_BALANCE && paymentStatus === PaymentStatus.PAID
         ? `iyz-${submittedAt.getTime()}-${orderSequence}`
         : null;
@@ -950,6 +971,7 @@ async function seedJavsuOrders() {
           deliveryNotes: notes,
           status: state.status,
           deliveryStatus: state.deliveryStatus,
+          collectionStatus,
           source,
           submittedAt,
           createdAt: submittedAt,
@@ -1006,6 +1028,7 @@ async function seedMarmaraOrders() {
         apartmentNo: `${index + 1}`,
         status: OrderStatus.COMPLETED,
         deliveryStatus: DeliveryStatus.DELIVERED,
+        collectionStatus: index % 3 === 0 ? CollectionStatus.PAID : CollectionStatus.ON_ACCOUNT,
         source: index % 2 === 0 ? "qr" : "manual",
         courierId: "courier_marmara_1",
         submittedAt,

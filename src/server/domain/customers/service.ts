@@ -113,6 +113,8 @@ export type CustomerOperatorProfile = {
   lastOrderDate: string | null;
   recentOrder: CustomerOperatorOrderSummary | null;
   frequentProducts: CustomerOperatorQuickProduct[];
+  openBalanceCents: number;
+  openOrderCount: number;
 };
 
 function toOperatorPaymentMethod(
@@ -187,6 +189,40 @@ export async function findCustomerOperatorProfileByNormalizedPhone(
     take: 5
   });
 
+  const openOrders = await db.order.findMany({
+    where: {
+      companyId,
+      status: {
+        not: "CANCELLED"
+      },
+      collectionStatus: {
+        not: "PAID"
+      },
+      OR: customerRecord.id
+        ? [
+            {
+              customerId: customerRecord.id
+            },
+            {
+              normalizedPhone
+            }
+          ]
+        : [
+            {
+              normalizedPhone
+            }
+          ]
+    },
+    include: {
+      payments: {
+        orderBy: {
+          createdAt: "asc"
+        },
+        take: 1
+      }
+    }
+  });
+
   const recentOrder = recentOrders[0]
     ? {
         id: recentOrders[0].id,
@@ -235,11 +271,18 @@ export async function findCustomerOperatorProfileByNormalizedPhone(
     .sort((left, right) => right.quantity - left.quantity || left.name.localeCompare(right.name, "tr"))
     .slice(0, 4);
 
+  const openBalanceCents = openOrders.reduce(
+    (sum, order) => sum + (order.payments[0]?.amountCents ?? 0),
+    0
+  );
+
   return {
     customer,
     lastOrderDate: recentOrders[0]?.submittedAt.toISOString() ?? null,
     recentOrder,
-    frequentProducts
+    frequentProducts,
+    openBalanceCents,
+    openOrderCount: openOrders.length
   };
 }
 

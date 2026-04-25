@@ -974,6 +974,30 @@ textarea {
   background: rgba(194, 65, 12, 0.08);
 }
 
+.collection-status {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.34rem 0.72rem;
+}
+
+.collection-status-paid {
+  color: #0f5132;
+  background: rgba(15, 118, 110, 0.13);
+}
+
+.collection-status-pending {
+  color: var(--muted);
+  background: rgba(17, 35, 31, 0.08);
+}
+
+.collection-status-on-account {
+  color: #9a6700;
+  background: rgba(245, 158, 11, 0.16);
+}
+
 .product-form-grid {
   display: grid;
   gap: 0.9rem;
@@ -1552,6 +1576,7 @@ textarea {
 .order-summary-tags-compact .source-badge,
 .order-summary-tags-compact .delivery-status,
 .order-summary-tags-compact .payment-status,
+.order-summary-tags-compact .collection-status,
 .order-summary-tags-compact .pill,
 .order-summary-tags-compact .status,
 .order-summary-tags-compact .address-quality {
@@ -1569,6 +1594,13 @@ textarea {
   min-height: 2rem;
   padding-block: 0.34rem;
   white-space: nowrap;
+}
+
+.button-secondary.is-active {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  box-shadow: inset 0 0 0 1px var(--color-primary-border);
 }
 
 .order-card-compact {

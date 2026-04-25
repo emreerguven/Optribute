@@ -53,7 +53,9 @@ export async function GET(
       notes: customer.notes,
       lastOrderDate: profile.lastOrderDate,
       recentOrder: profile.recentOrder,
-      frequentProducts: profile.frequentProducts
+      frequentProducts: profile.frequentProducts,
+      openBalanceCents: profile.openBalanceCents,
+      openOrderCount: profile.openOrderCount
     }
   });
 }

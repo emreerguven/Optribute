@@ -15,6 +15,7 @@ import { evaluateBestCampaign } from "@/src/lib/campaigns";
 import { formatCurrency } from "@/src/lib/currency";
 import type {
   Campaign,
+  CollectionStatus,
   Courier,
   DeliveryStatus,
   Order,
@@ -88,12 +89,14 @@ type LookupPayload = {
         quantity: number;
       }>;
     } | null;
-    frequentProducts?: Array<{
-      productId: string;
-      name: string;
-      quantity: number;
-    }>;
-  };
+      frequentProducts?: Array<{
+        productId: string;
+        name: string;
+        quantity: number;
+      }>;
+      openBalanceCents?: number;
+      openOrderCount?: number;
+    };
   error?: string;
 };
 
@@ -103,6 +106,12 @@ type AddressEditDraft = {
 };
 
 type OperatorLookupCustomer = NonNullable<LookupPayload["customer"]>;
+
+const COLLECTION_STATUS_OPTIONS: Array<{ value: CollectionStatus; label: string }> = [
+  { value: "paid", label: "Ödendi" },
+  { value: "pending", label: "Bekliyor" },
+  { value: "on-account", label: "Veresiye" }
+];
 
 const EMPTY_MANUAL_FORM: ManualOrderForm = {
   phone: "",
@@ -206,6 +215,30 @@ function paymentStatusClass(status: string) {
       return "payment-status-failed";
     default:
       return "payment-status-pending";
+  }
+}
+
+function collectionStatusLabel(status: CollectionStatus) {
+  switch (status) {
+    case "paid":
+      return "Ödendi";
+    case "on-account":
+      return "Veresiye";
+    case "pending":
+    default:
+      return "Bekliyor";
+  }
+}
+
+function collectionStatusClass(status: CollectionStatus) {
+  switch (status) {
+    case "paid":
+      return "collection-status-paid";
+    case "on-account":
+      return "collection-status-on-account";
+    case "pending":
+    default:
+      return "collection-status-pending";
   }
 }
 
@@ -856,6 +889,40 @@ export function OrdersManager({
     }
   }
 
+  async function handleCollectionStatusUpdate(orderId: string, nextStatus: CollectionStatus) {
+    setActiveOrderId(orderId);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/dealers/${dealerSlug}/orders/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          collectionStatus: nextStatus
+        })
+      });
+
+      const payload = (await response.json()) as { order?: Order; error?: string };
+
+      if (!response.ok || !payload.order) {
+        throw new Error(payload.error ?? "Tahsilat durumu güncellenemedi");
+      }
+
+      setOrders((current) =>
+        current.map((order) => (order.id === payload.order?.id ? payload.order : order))
+      );
+      setMessage("Tahsilat durumu güncellendi.");
+    } catch (error) {
+      const nextMessage =
+        error instanceof Error ? error.message : "Tahsilat durumu güncellenemedi";
+      setMessage(nextMessage);
+    } finally {
+      setActiveOrderId(null);
+    }
+  }
+
   async function handleDeliverySave(order: Order) {
     const draft = getDeliveryDraft(order);
 
@@ -1449,6 +1516,18 @@ export function OrdersManager({
                       : "Sipariş yok"}
                   </strong>
                 </div>
+                <div className="detail-block">
+                  <span className="detail-label">Açık bakiye</span>
+                  <strong>{formatCurrency(lookupCustomer.openBalanceCents ?? 0)}</strong>
+                </div>
+                <div className="detail-block">
+                  <span className="detail-label">Cari durum</span>
+                  <strong>
+                    {lookupCustomer.openOrderCount && lookupCustomer.openOrderCount > 0
+                      ? `${lookupCustomer.openOrderCount} açık sipariş`
+                      : "Borç görünmüyor"}
+                  </strong>
+                </div>
               </div>
 
               {lookupCustomer.recentOrder ? (
@@ -1739,11 +1818,11 @@ export function OrdersManager({
                     <span className="pill">
                       {order.courier?.fullName ?? "Kurye yok"}
                     </span>
-                    <span className={`payment-status ${primaryPayment ? paymentStatusClass(primaryPayment.status) : "payment-status-pending"}`}>
+                    <span className="pill">
                       {primaryPayment ? paymentMethodLabel(primaryPayment.method) : "Ödeme bekliyor"}
                     </span>
-                    <span className={`payment-status ${primaryPayment ? paymentStatusClass(primaryPayment.status) : "payment-status-pending"}`}>
-                      {primaryPayment ? paymentStatusLabel(primaryPayment.status) : "Bekliyor"}
+                    <span className={`collection-status ${collectionStatusClass(order.collectionStatus)}`}>
+                      {collectionStatusLabel(order.collectionStatus)}
                     </span>
                     <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
                       {deliveryStatusLabel(order.deliveryStatus)}
@@ -1774,12 +1853,14 @@ export function OrdersManager({
                     <span className="caption">{order.phone}</span>
                   </div>
                   <div className="detail-block">
-                    <span className="detail-label">Ödeme</span>
-                    <strong>
-                      {primaryPayment ? paymentMethodLabel(primaryPayment.method) : "Belirtilmedi"}
-                    </strong>
-                    <span className={`payment-status ${primaryPayment ? paymentStatusClass(primaryPayment.status) : "payment-status-pending"}`}>
-                      {primaryPayment ? paymentStatusLabel(primaryPayment.status) : "Bekliyor"}
+                    <span className="detail-label">Tahsilat</span>
+                    <strong>{collectionStatusLabel(order.collectionStatus)}</strong>
+                    <span className={`collection-status ${collectionStatusClass(order.collectionStatus)}`}>
+                      {collectionStatusLabel(order.collectionStatus)}
+                    </span>
+                    <span className="caption">
+                      {primaryPayment ? paymentMethodLabel(primaryPayment.method) : "Ödeme yöntemi yok"}
+                      {primaryPayment ? ` • ${paymentStatusLabel(primaryPayment.status)}` : ""}
                     </span>
                   </div>
                   <div className="detail-block">
@@ -2056,6 +2137,28 @@ export function OrdersManager({
                     >
                       {isUpdating ? "Kaydediliyor..." : "Teslimatı kaydet"}
                     </button>
+                  </div>
+                </div>
+
+                <div className="delivery-panel stack compact-stack">
+                  <div>
+                    <span className="detail-label">Tahsilat yönetimi</span>
+                    <p className="caption">Siparişin finansal durumunu operasyon açısından güncelleyin.</p>
+                  </div>
+                  <div className="actions">
+                    {COLLECTION_STATUS_OPTIONS.map((option) => (
+                      <button
+                        key={`${order.id}_${option.value}`}
+                        type="button"
+                        className={`button-secondary admin-inline-button ${
+                          order.collectionStatus === option.value ? "is-active" : ""
+                        }`}
+                        onClick={() => handleCollectionStatusUpdate(order.id, option.value)}
+                        disabled={isUpdating}
+                      >
+                        {isUpdating && activeOrderId === order.id ? "Güncelleniyor..." : option.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
