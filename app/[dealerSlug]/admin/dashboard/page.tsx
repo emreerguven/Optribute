@@ -182,6 +182,30 @@ export default async function DealerDashboardPage({
       />
 
       <section className="dashboard-grid">
+        <article className="panel stack dashboard-card">
+          <div className="dashboard-card-head">
+            <div>
+              <span className="kicker">Tahsilat görünümü</span>
+              <h2>Cari özet</h2>
+            </div>
+            <Link href={`/${dealer.slug}/admin/orders?collection=on-account`} className="button-secondary">
+              Veresiye siparişler
+            </Link>
+          </div>
+          <div className="dashboard-split-list">
+            <div className="summary-card stack">
+              <span className="detail-label">Açık bakiye</span>
+              <strong className="dashboard-strong">{formatCurrency(snapshot.openBalanceCents)}</strong>
+              <span className="caption">Ödenmemiş siparişlerden hesaplanır.</span>
+            </div>
+            <div className="summary-card stack">
+              <span className="detail-label">Veresiye sipariş</span>
+              <strong className="dashboard-strong">{snapshot.onAccountOrdersCount}</strong>
+              <span className="caption">Tahsilat durumu veresiye olan siparişler.</span>
+            </div>
+          </div>
+        </article>
+
         <article className="panel stack dashboard-card dashboard-card-wide">
           <div className="dashboard-card-head">
             <div>

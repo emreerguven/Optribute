@@ -38,6 +38,8 @@ export type DealerDashboardSnapshot = {
   todayRevenueCents: number;
   unassignedOrdersCount: number;
   outForDeliveryOrdersCount: number;
+  openBalanceCents: number;
+  onAccountOrdersCount: number;
   topProducts: ProductMovement[];
   paymentMethodDistribution: PaymentDistributionRow<PaymentMethod>[];
   paymentStatusDistribution: PaymentDistributionRow<PaymentStatus>[];
@@ -124,6 +126,16 @@ export async function getDealerDashboardSnapshot(
   const outForDeliveryOrdersCount = orders.filter(
     (order) => order.deliveryStatus === "out-for-delivery"
   ).length;
+  const openBalanceCents = orders.reduce((sum, order) => {
+    if (order.status === "cancelled" || order.collectionStatus === "paid") {
+      return sum;
+    }
+
+    return sum + (getPrimaryPayment(order)?.amountCents ?? 0);
+  }, 0);
+  const onAccountOrdersCount = orders.filter(
+    (order) => order.status !== "cancelled" && order.collectionStatus === "on-account"
+  ).length;
 
   const productQuantities = new Map<string, number>();
 
@@ -196,6 +208,8 @@ export async function getDealerDashboardSnapshot(
     todayRevenueCents,
     unassignedOrdersCount,
     outForDeliveryOrdersCount,
+    openBalanceCents,
+    onAccountOrdersCount,
     topProducts,
     paymentMethodDistribution: toSortedDistribution(paymentMethodCounts),
     paymentStatusDistribution: toSortedDistribution(paymentStatusCounts),

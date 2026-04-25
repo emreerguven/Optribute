@@ -24,12 +24,13 @@ export default async function DealerOrdersAdminPage({
     courier?: string;
     delivery?: string;
     source?: string;
+    collection?: string;
     today?: string;
     order?: string;
   }>;
 }) {
   const { dealerSlug } = await params;
-  const { courier, delivery, source, today, order } = await searchParams;
+  const { courier, delivery, source, collection, today, order } = await searchParams;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {
@@ -107,6 +108,11 @@ export default async function DealerOrdersAdminPage({
             : "all"
         }
         initialSourceFilter={source === "manual" || source === "qr" ? source : "all"}
+        initialCollectionFilter={
+          collection === "paid" || collection === "pending" || collection === "on-account"
+            ? collection
+            : "all"
+        }
         initialTodayOnly={today === "1"}
         initialHighlightedOrderId={order ?? null}
       />

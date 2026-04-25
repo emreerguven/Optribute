@@ -36,6 +36,7 @@ type Props = {
   initialCourierFilter?: string;
   initialDeliveryFilter?: DeliveryStatusFilter;
   initialSourceFilter?: SourceFilter;
+  initialCollectionFilter?: CollectionStatusFilter;
   initialTodayOnly?: boolean;
   initialHighlightedOrderId?: string | null;
 };
@@ -59,12 +60,16 @@ type DispatchPreset =
   | "assigned"
   | "out-for-delivery"
   | "delivered"
+  | "paid"
+  | "pending"
+  | "on-account"
   | "manual"
   | "qr";
 
 type SortOption = "newest" | "oldest" | "total-desc" | "total-asc";
 type OrderStatusFilter = "all" | OrderStatus;
 type PaymentStatusFilter = "all" | PaymentStatus;
+type CollectionStatusFilter = "all" | CollectionStatus;
 type SourceFilter = "all" | OrderSource;
 type DeliveryStatusFilter = "all" | DeliveryStatus;
 type CourierFilter = "all" | string;
@@ -157,6 +162,9 @@ const DISPATCH_PRESETS: Array<{ value: DispatchPreset; label: string }> = [
   { value: "assigned", label: "Atananlar" },
   { value: "out-for-delivery", label: "Dağıtımdakiler" },
   { value: "delivered", label: "Teslim edilenler" },
+  { value: "paid", label: "Ödendi" },
+  { value: "pending", label: "Bekliyor" },
+  { value: "on-account", label: "Veresiye" },
   { value: "manual", label: "Manuel siparişler" },
   { value: "qr", label: "QR siparişleri" }
 ];
@@ -380,6 +388,7 @@ export function OrdersManager({
   initialCourierFilter = "all",
   initialDeliveryFilter = "all",
   initialSourceFilter = "all",
+  initialCollectionFilter = "all",
   initialTodayOnly = false,
   initialHighlightedOrderId = null
 }: Props) {
@@ -403,6 +412,8 @@ export function OrdersManager({
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<PaymentStatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>(initialSourceFilter);
+  const [collectionStatusFilter, setCollectionStatusFilter] =
+    useState<CollectionStatusFilter>(initialCollectionFilter);
   const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<DeliveryStatusFilter>(initialDeliveryFilter);
   const [courierFilter, setCourierFilter] = useState<CourierFilter>(initialCourierFilter);
   const [todayOnly, setTodayOnly] = useState(initialTodayOnly);
@@ -487,6 +498,10 @@ export function OrdersManager({
           return false;
         }
 
+        if (collectionStatusFilter !== "all" && order.collectionStatus !== collectionStatusFilter) {
+          return false;
+        }
+
         if (sourceFilter !== "all" && order.source !== sourceFilter) {
           return false;
         }
@@ -519,6 +534,7 @@ export function OrdersManager({
         }
       });
   }, [
+    collectionStatusFilter,
     courierFilter,
     deliveryStatusFilter,
     orders,
@@ -536,27 +552,45 @@ export function OrdersManager({
   const allVisibleSelected =
     visibleOrders.length > 0 && visibleOrders.every((order) => selectedOrderIds.includes(order.id));
   const activeDispatchPreset = useMemo(() => {
-    if (deliveryStatusFilter !== "all" && sourceFilter === "all") {
+    if (
+      deliveryStatusFilter !== "all" &&
+      sourceFilter === "all" &&
+      collectionStatusFilter === "all"
+    ) {
       return deliveryStatusFilter as DispatchPreset;
     }
 
-    if (sourceFilter !== "all" && deliveryStatusFilter === "all") {
+    if (
+      sourceFilter !== "all" &&
+      deliveryStatusFilter === "all" &&
+      collectionStatusFilter === "all"
+    ) {
       return sourceFilter as DispatchPreset;
     }
 
+    if (
+      collectionStatusFilter !== "all" &&
+      sourceFilter === "all" &&
+      deliveryStatusFilter === "all"
+    ) {
+      return collectionStatusFilter as DispatchPreset;
+    }
+
     return null;
-  }, [deliveryStatusFilter, sourceFilter]);
+  }, [collectionStatusFilter, deliveryStatusFilter, sourceFilter]);
   const hasActiveFilters = useMemo(
     () =>
       Boolean(searchTerm) ||
       statusFilter !== "all" ||
       paymentStatusFilter !== "all" ||
+      collectionStatusFilter !== "all" ||
       sourceFilter !== "all" ||
       deliveryStatusFilter !== "all" ||
       courierFilter !== "all" ||
       todayOnly ||
       sortOption !== "newest",
     [
+      collectionStatusFilter,
       courierFilter,
       deliveryStatusFilter,
       paymentStatusFilter,
@@ -719,10 +753,19 @@ export function OrdersManager({
     ) {
       setDeliveryStatusFilter(preset);
       setSourceFilter("all");
+      setCollectionStatusFilter("all");
+      return;
+    }
+
+    if (preset === "paid" || preset === "pending" || preset === "on-account") {
+      setCollectionStatusFilter(preset);
+      setSourceFilter("all");
+      setDeliveryStatusFilter("all");
       return;
     }
 
     setSourceFilter(preset);
+    setCollectionStatusFilter("all");
     setDeliveryStatusFilter("all");
   }
 
@@ -730,6 +773,7 @@ export function OrdersManager({
     setSearchTerm("");
     setStatusFilter("all");
     setPaymentStatusFilter("all");
+    setCollectionStatusFilter("all");
     setSourceFilter("all");
     setDeliveryStatusFilter("all");
     setCourierFilter("all");
@@ -1175,6 +1219,20 @@ export function OrdersManager({
             <option value="paid">Ödendi</option>
             <option value="failed">Ödeme alınamadı</option>
             <option value="cancelled">İptal</option>
+          </select>
+        </label>
+        <label className={`filter-field ${collectionStatusFilter !== "all" ? "filter-field-active" : ""}`}>
+          Tahsilat
+          <select
+            value={collectionStatusFilter}
+            onChange={(event) => setCollectionStatusFilter(event.target.value as CollectionStatusFilter)}
+          >
+            <option value="all">Tümü</option>
+            {COLLECTION_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
         <label className={`filter-field ${sourceFilter !== "all" ? "filter-field-active" : ""}`}>
