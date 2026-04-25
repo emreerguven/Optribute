@@ -70,6 +70,50 @@ function deliveryStatusClass(status: DeliveryStatus) {
   }
 }
 
+function orderStatusLabel(status: Order["status"]) {
+  switch (status) {
+    case "preparing":
+      return "Hazırlanıyor";
+    case "completed":
+      return "Tamamlandı";
+    case "cancelled":
+      return "İptal";
+    case "confirmed":
+      return "Onaylandı";
+    case "delivering":
+      return "Dağıtımda";
+    case "pending":
+    default:
+      return "Yeni";
+  }
+}
+
+function paymentMethodLabel(method: Order["payments"][number]["method"]) {
+  switch (method) {
+    case "cash-on-delivery":
+      return "Kapıda nakit";
+    case "card-on-delivery":
+      return "Kapıda kart";
+    case "online":
+      return "Online";
+    default:
+      return method;
+  }
+}
+
+function paymentStatusClass(status: Order["payments"][number]["status"]) {
+  switch (status) {
+    case "paid":
+      return "payment-status-paid";
+    case "failed":
+    case "cancelled":
+      return "payment-status-failed";
+    case "pending":
+    default:
+      return "payment-status-pending";
+  }
+}
+
 function formatOrderTime(timestamp: string) {
   return new Intl.DateTimeFormat("tr-TR", {
     dateStyle: "medium",
@@ -189,7 +233,7 @@ export default async function CourierWorklistPage({
           <div>
             <span className="kicker">Teslimat listesi</span>
             <h1>{courier.fullName}</h1>
-            <p className="lead">Kurye üzerindeki siparişleri izleyin ve rota için hazır durak listesini kullanın.</p>
+            <p className="lead">Durakları hızlıca gözden geçirin ve aktif teslimatları yönetin.</p>
             <div className="actions">
               <Link href={`/${dealer.slug}/admin/couriers`} className="button-secondary">
                 Kuryelere dön
@@ -200,7 +244,7 @@ export default async function CourierWorklistPage({
               <LogoutButton dealerSlug={dealer.slug} />
             </div>
           </div>
-          <div className="stats-grid">
+          <div className="stats-grid courier-worklist-stats">
             <div className="metric">
               <div className="metric-value">{activeOrders.length}</div>
               <div>Aktif teslimat</div>
@@ -214,7 +258,7 @@ export default async function CourierWorklistPage({
       </section>
 
       <section className="panel stack">
-        <div className="admin-console-head">
+        <div className="admin-console-head courier-route-head">
           <div>
             <span className="kicker">Rota için hazırla</span>
             <h2>Durak listesi</h2>
@@ -251,49 +295,90 @@ export default async function CourierWorklistPage({
         ) : (
           <div className="route-stop-list">
             {groupedStops.map((stop, index) => (
-              <article key={stop.key} className="order-card stack compact-stack route-stop-card">
-                <div className="order-topline">
-                  <div>
-                    <span className="detail-label">Durak {index + 1}</span>
-                    <h3>{stop.label}</h3>
-                    <p className="caption">{stop.areaLabel || "Adres özeti yok"}</p>
-                  </div>
-                  <a
-                    href={buildGoogleMapsSearchUrl(stop.mapQuery)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="button-secondary admin-inline-button"
-                  >
-                    Haritada ara
-                  </a>
-                </div>
-                <div className="summary-row">
-                  <span>Sipariş adedi</span>
-                  <strong>{stop.orders.length}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Toplam tutar</span>
-                  <strong>{formatCurrency(stop.totalCents)}</strong>
-                </div>
-                  <div className="stack compact-stack">
-                  {stop.orders.map((order) => (
-                    <div key={order.id} className="route-stop-order-row">
-                      <div>
-                        <strong>{order.customerName}</strong>
-                        <p className="caption">{order.phone}</p>
-                        {shouldShowAddressQualityWarning(order.addressQualityStatus) ? (
-                          <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
-                            {addressQualityLabel(order.addressQualityStatus)}
-                          </span>
-                        ) : null}
-                      </div>
-                      <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
-                        {deliveryStatusLabel(order.deliveryStatus)}
-                      </span>
+              <details
+                key={stop.key}
+                className="order-card compact-stack route-stop-card route-stop-details"
+                open={index === 0}
+              >
+                <summary className="route-stop-summary">
+                  <div className="route-stop-summary-main">
+                    <div className="route-stop-index">
+                      <span className="detail-label">Durak {index + 1}</span>
                     </div>
-                  ))}
+                    <div className="route-stop-copy">
+                      <strong>{stop.label}</strong>
+                      <span className="caption">{stop.areaLabel || "Adres özeti yok"}</span>
+                    </div>
+                  </div>
+                  <div className="route-stop-summary-meta">
+                    <div className="compact-meta-item compact-meta-item-inline">
+                      <span className="detail-label">Sipariş</span>
+                      <strong>{stop.orders.length}</strong>
+                    </div>
+                    <div className="compact-meta-item compact-meta-item-inline">
+                      <span className="detail-label">Tutar</span>
+                      <strong>{formatCurrency(stop.totalCents)}</strong>
+                    </div>
+                  </div>
+                  <span className="route-stop-summary-toggle">
+                    {index === 0 ? "Açık" : "Detay"}
+                  </span>
+                </summary>
+
+                <div className="route-stop-body stack compact-stack">
+                  <div className="route-stop-actions">
+                    <a
+                      href={buildGoogleMapsSearchUrl(stop.mapQuery)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="button-secondary admin-inline-button"
+                    >
+                      Haritada ara
+                    </a>
+                  </div>
+
+                  <div className="route-stop-orders">
+                    {stop.orders.map((order) => {
+                      const total = getOrderTotal(order);
+                      const primaryPayment = order.payments[0];
+
+                      return (
+                        <div key={order.id} className="route-stop-order-row route-stop-order-row-compact">
+                          <div className="route-stop-order-main">
+                            <strong>{order.customerName}</strong>
+                            <span className="caption">{order.phone}</span>
+                          </div>
+                          <div className="route-stop-order-meta">
+                            <span className="caption">{formatOrderTime(order.createdAt)}</span>
+                            <strong>{formatCurrency(total)}</strong>
+                          </div>
+                          <div className="route-stop-order-tags">
+                            {primaryPayment ? (
+                              <>
+                                <span className={`payment-status ${paymentStatusClass(primaryPayment.status)}`}>
+                                  {paymentMethodLabel(primaryPayment.method)}
+                                </span>
+                                <span className={`payment-status ${paymentStatusClass(primaryPayment.status)}`}>
+                                  {paymentStatusLabel(primaryPayment.status)}
+                                </span>
+                              </>
+                            ) : null}
+                            <span className={`status`}>{orderStatusLabel(order.status)}</span>
+                            <span className={`delivery-status ${deliveryStatusClass(order.deliveryStatus)}`}>
+                              {deliveryStatusLabel(order.deliveryStatus)}
+                            </span>
+                            {shouldShowAddressQualityWarning(order.addressQualityStatus) ? (
+                              <span className={`address-quality ${addressQualityClass(order.addressQualityStatus)}`}>
+                                {addressQualityLabel(order.addressQualityStatus)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </article>
+              </details>
             ))}
           </div>
         )}
