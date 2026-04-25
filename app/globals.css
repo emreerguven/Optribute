@@ -1465,6 +1465,7 @@ textarea {
 
 .order-summary-row {
   align-items: center;
+  min-height: 4.4rem;
 }
 
 .order-select-checkbox {
@@ -1482,9 +1483,10 @@ textarea {
 
 .order-summary-main {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
   gap: 0.55rem;
+  min-width: 0;
 }
 
 .order-summary-main-compact {
@@ -1506,10 +1508,12 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 0.32rem;
+  min-width: 0;
 }
 
 .order-summary-meta-compact {
   align-items: center;
+  justify-content: flex-start;
 }
 
 .compact-meta-item {
@@ -1524,6 +1528,13 @@ textarea {
 
 .compact-meta-item-inline {
   gap: 0.08rem;
+  align-content: start;
+}
+
+.compact-meta-item-inline .detail-label,
+.compact-meta-item-inline strong {
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .order-summary-tags {
@@ -1534,6 +1545,8 @@ textarea {
 
 .order-summary-tags-compact {
   align-items: center;
+  align-content: center;
+  min-width: 0;
 }
 
 .order-summary-tags-compact .source-badge,
@@ -1548,11 +1561,14 @@ textarea {
 
 .order-row-actions {
   justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
 }
 
 .order-row-actions .button-secondary {
   min-height: 2rem;
   padding-block: 0.34rem;
+  white-space: nowrap;
 }
 
 .order-card-compact {
@@ -1696,11 +1712,13 @@ textarea {
   .order-summary-compact {
     grid-template-columns:
       auto
-      minmax(200px, 1.2fr)
-      minmax(180px, 0.9fr)
-      minmax(0, 2fr)
+      minmax(220px, 1.45fr)
+      minmax(150px, 0.9fr)
+      minmax(120px, 0.8fr)
+      minmax(320px, 1.7fr)
       auto;
     align-items: center;
+    column-gap: 0.55rem;
   }
 
   .order-summary-main {
@@ -1708,10 +1726,8 @@ textarea {
   }
 
   .order-summary-main-compact {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.5rem;
+    display: block;
+    min-width: 0;
   }
 
   .order-summary-meta {
@@ -1719,12 +1735,17 @@ textarea {
   }
 
   .compact-meta-item {
-    min-width: 84px;
-    padding: 0.24rem 0.42rem;
+    min-width: 0;
+    width: 100%;
+    padding: 0.3rem 0.45rem;
   }
 
   .order-summary-tags {
     align-items: center;
+  }
+
+  .order-summary-tags-compact {
+    justify-content: flex-start;
   }
 
   .order-summary-compact > .actions {

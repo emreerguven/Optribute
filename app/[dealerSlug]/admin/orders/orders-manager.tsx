@@ -1718,15 +1718,17 @@ export function OrdersManager({
                       <strong>{order.customerName}</strong>
                       <p className="caption">{order.phone}</p>
                     </div>
-                    <div className="order-summary-meta order-summary-meta-compact">
-                      <div className="compact-meta-item compact-meta-item-inline">
-                        <span className="detail-label">Zaman</span>
-                        <strong>{formatOrderTime(order.createdAt)}</strong>
-                      </div>
-                      <div className="compact-meta-item compact-meta-item-inline">
-                        <span className="detail-label">Tutar</span>
-                        <strong>{formatCurrency(total)}</strong>
-                      </div>
+                  </div>
+                  <div className="order-summary-meta order-summary-meta-compact">
+                    <div className="compact-meta-item compact-meta-item-inline">
+                      <span className="detail-label">Zaman</span>
+                      <strong>{formatOrderTime(order.createdAt)}</strong>
+                    </div>
+                  </div>
+                  <div className="order-summary-meta order-summary-meta-compact">
+                    <div className="compact-meta-item compact-meta-item-inline">
+                      <span className="detail-label">Tutar</span>
+                      <strong>{formatCurrency(total)}</strong>
                     </div>
                   </div>
                   <div className="order-summary-tags order-summary-tags-compact">
