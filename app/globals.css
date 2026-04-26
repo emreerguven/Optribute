@@ -1451,6 +1451,14 @@ textarea {
   gap: 0.52rem;
 }
 
+.orders-secondary-filters {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.52rem;
+  padding-top: 0.18rem;
+  border-top: 1px solid rgba(17, 35, 31, 0.08);
+}
+
 .order-badge-row {
   display: flex;
   align-items: flex-start;
@@ -1648,6 +1656,34 @@ textarea {
 .order-expanded-panel {
   padding-top: 0.6rem;
   border-top: 1px solid rgba(17, 35, 31, 0.08);
+}
+
+.order-detail-toggle {
+  padding: 0.72rem 0.82rem;
+}
+
+.order-detail-toggle summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.order-detail-toggle summary::-webkit-details-marker {
+  display: none;
+}
+
+.order-detail-toggle-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.order-detail-toggle[open] .order-detail-toggle-summary .caption::after {
+  content: " • açık";
+}
+
+.order-detail-toggle:not([open]) .order-detail-toggle-summary .caption::after {
+  content: " • kapalı";
 }
 
 .order-card-selected {
@@ -1967,6 +2003,10 @@ textarea {
 
   .orders-control-bar {
     grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .orders-secondary-filters {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .filter-field {
