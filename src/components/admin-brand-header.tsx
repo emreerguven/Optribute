@@ -31,9 +31,9 @@ export function AdminBrandHeader({ dealer, kicker, title, description, actions, 
             )}
 
             <div className="admin-brand-identity">
-              <div className="stack-tight">
-                <strong>{dealer.name}</strong>
-                <span className="caption">{dealer.city ?? "Bayi paneli"}</span>
+              <div className="admin-brand-identity-text">
+                <strong className="admin-brand-name">{dealer.name}</strong>
+                <span className="admin-brand-city">{dealer.city ?? "Bayi paneli"}</span>
               </div>
             </div>
           </div>

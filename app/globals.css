@@ -187,10 +187,10 @@ main {
 .admin-brand-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.95rem;
   min-width: min(100%, 28rem);
   max-width: 100%;
-  padding: 0.42rem 0.7rem 0.42rem 0.42rem;
+  padding: 0.5rem 0.78rem 0.5rem 0.5rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid var(--color-primary-border);
@@ -198,15 +198,52 @@ main {
 }
 
 .admin-brand-identity {
-  display: grid;
-  gap: 0.12rem;
+  display: flex;
+  align-items: center;
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.admin-brand-identity-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.admin-brand-name {
+  min-width: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-brand-city {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.admin-brand-city::before {
+  content: "";
+  width: 1px;
+  height: 0.9rem;
+  background: rgba(17, 35, 31, 0.14);
+  flex: 0 0 auto;
 }
 
 .admin-brand-visual {
   flex: 0 0 auto;
-  width: 5.4rem;
-  height: 3.3rem;
+  width: 5rem;
+  height: 3.15rem;
   border-radius: 14px;
   object-fit: cover;
   object-position: center;
@@ -1975,11 +2012,26 @@ textarea {
   .admin-brand-chip {
     min-width: 0;
     width: 100%;
+    gap: 0.75rem;
   }
 
   .admin-brand-visual {
     width: 4.8rem;
     height: 3rem;
+  }
+
+  .admin-brand-identity,
+  .admin-brand-identity-text {
+    align-items: flex-start;
+  }
+
+  .admin-brand-identity-text {
+    flex-direction: column;
+    gap: 0.18rem;
+  }
+
+  .admin-brand-city::before {
+    display: none;
   }
 
   .admin-console-head {
