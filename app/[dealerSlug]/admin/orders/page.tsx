@@ -27,10 +27,11 @@ export default async function DealerOrdersAdminPage({
     collection?: string;
     today?: string;
     order?: string;
+    compose?: string;
   }>;
 }) {
   const { dealerSlug } = await params;
-  const { courier, delivery, source, collection, today, order } = await searchParams;
+  const { courier, delivery, source, collection, today, order, compose } = await searchParams;
   const dealer = await getCompanyBySlug(dealerSlug);
 
   if (!dealer) {
@@ -115,6 +116,7 @@ export default async function DealerOrdersAdminPage({
         }
         initialTodayOnly={today === "1"}
         initialHighlightedOrderId={order ?? null}
+        initialCreateOpen={compose === "1"}
       />
     </main>
   );

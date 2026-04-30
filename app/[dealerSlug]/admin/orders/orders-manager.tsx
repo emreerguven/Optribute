@@ -39,6 +39,7 @@ type Props = {
   initialCollectionFilter?: CollectionStatusFilter;
   initialTodayOnly?: boolean;
   initialHighlightedOrderId?: string | null;
+  initialCreateOpen?: boolean;
 };
 
 type ManualOrderForm = {
@@ -390,12 +391,13 @@ export function OrdersManager({
   initialSourceFilter = "all",
   initialCollectionFilter = "all",
   initialTodayOnly = false,
-  initialHighlightedOrderId = null
+  initialHighlightedOrderId = null,
+  initialCreateOpen = false
 }: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(initialCreateOpen);
   const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>(
     initialHighlightedOrderId ? [initialHighlightedOrderId] : []
   );
